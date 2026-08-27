@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#5c94fc">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Super Iván - Birthday Gift Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- Retro Heads-Up Display (HUD) - Personalized for Iván -->
+    <header id="hud" aria-label="Game HUD">
+      <div class="hud-item hud-ivan">
+        <span class="hud-label">IVÁN</span>
+        <span id="hud-score" class="hud-value">000000</span>
+      </div>
+      <div class="hud-item hud-coins">
+        <span class="hud-label">🎂</span>
+        <span id="hud-coins" class="hud-value">&times;00</span>
+      </div>
+      <div class="hud-item hud-world">
+        <span class="hud-label">WORLD</span>
+        <span id="hud-world" class="hud-value">2026</span>
+      </div>
+      <div class="hud-item hud-time">
+        <span class="hud-label">TIME</span>
+        <span id="hud-time" class="hud-value">400</span>
+      </div>
+      <div class="hud-item hud-lives">
+        <span class="hud-label">LIVES</span>
+        <span id="hud-lives" class="hud-value">&times;3</span>
+      </div>
+    </header>
+
+    <!-- Native Canvas (360x800 logical coordinate space) -->
+    <canvas id="game-canvas" width="360" height="800" aria-label="Super Iván Game Canvas"></canvas>
+
+    <!-- Celebratory Birthday Victory Modal (DOM Overlay) -->
+    <div id="victory-modal" class="victory-overlay hidden" aria-label="Pantalla de Victoria de Iván" role="dialog" aria-modal="true">
+      <div class="victory-card">
+        <div class="victory-sparkles" aria-hidden="true">✨ 🎂 🎈 ✨</div>
+        <h1 class="victory-title">🎉 ¡FELICIDADES IVÁN! 🎉</h1>
+        <p class="victory-subtitle">¡Has completado el juego de tu cumpleaños!</p>
+        
+        <div class="victory-stats">
+          <div class="stat-card">
+            <span class="stat-title">PUNTOS</span>
+            <span id="win-score" class="stat-number">000000</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-title">TARTAS</span>
+            <span id="win-coins" class="stat-number">00</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-title">TIEMPO</span>
+            <span id="win-time" class="stat-number">000</span>
+          </div>
+        </div>
+
+        <!-- EXACT REQUIRED REWARD BUTTON (R3 Acceptance Criteria) -->
+        <a id="reward-btn"
+           class="reward-button"
+           href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+           target="_blank"
+           rel="noopener noreferrer"
+           aria-label="Abrir recompensa de cumpleaños en YouTube">Terminado el juego. Pincha aquí para recibir la recompensa</a>
+
+        <button id="btn-replay" class="replay-button" type="button" aria-label="Jugar de nuevo">
+          <span>🔄 Jugar de nuevo</span>
+        </button>
+
+        <p class="victory-hint">Pulsa el botón dorado para recibir tu recompensa especial 🎁</p>
+      </div>
+    </div>
+
+    <!-- Mobile-First Touch Controls Overlay -->
+    <div id="touch-controls" class="touch-overlay" aria-label="Controles táctiles">
+      <div class="dpad-container">
+        <button id="btn-left" class="touch-btn dpad-btn" aria-label="Mover a la izquierda">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button id="btn-right" class="touch-btn dpad-btn" aria-label="Mover a la derecha">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+      <div class="action-container">
+        <button id="btn-jump" class="touch-btn action-btn" aria-label="Saltar">
+          <span class="btn-text">A</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core Scripts in Dependency Order -->
+  <script src="js/assets.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/level.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

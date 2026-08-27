@@ -1,0 +1,389 @@
+/* ==========================================================================
+   Super Mario HTML5 - Mobile-First 360x800 Zero-Scroll Styling
+   ========================================================================== */
+
+/* --- 1. Global Reset & Touch Optimization --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  background-color: #000000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Press Start 2P', monospace, 'Courier New', sans-serif;
+}
+
+/* --- 2. Responsive Container & Canvas --- */
+#game-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  max-width: 480px;
+  max-height: 100vh;
+  overflow: hidden;
+  background-color: #5c94fc; /* NES Sky Blue */
+  touch-action: none;
+}
+
+#game-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  object-fit: contain;
+  background-color: #5c94fc;
+}
+
+/* --- 3. Heads-Up Display (HUD) --- */
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 14px;
+  pointer-events: none;
+  color: #ffffff;
+  text-shadow: 2px 2px 0px #000000;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.hud-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-label {
+  font-size: 9px;
+  opacity: 0.95;
+  color: #ffffff;
+}
+
+.hud-value {
+  font-size: 11px;
+  color: #ffffff;
+}
+
+/* --- 4. DOM Touch Controls Overlay --- */
+#touch-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 280px; /* Ergonomic thumb zone (Y >= 520px in 800px viewport) */
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px 18px 28px 18px;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.dpad-container {
+  display: flex;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.action-container {
+  display: flex;
+  pointer-events: none;
+}
+
+.touch-btn {
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: transform 0.04s ease, background-color 0.04s ease, border-color 0.04s ease, box-shadow 0.04s ease;
+}
+
+/* D-Pad Buttons (Left & Right) */
+#btn-left, #btn-right {
+  width: 64px;
+  height: 64px;
+  min-width: 56px;
+  min-height: 56px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.25);
+}
+
+#btn-left.active, #btn-left:active,
+#btn-right.active, #btn-right:active {
+  background: rgba(229, 37, 33, 0.85);
+  border-color: #ffffff;
+  transform: scale(0.92);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7), inset 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+/* Jump Action Button */
+#btn-jump {
+  width: 76px;
+  height: 76px;
+  min-width: 56px;
+  min-height: 56px;
+  border-radius: 50%;
+  background: rgba(229, 37, 33, 0.65);
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  color: #ffffff;
+  font-family: 'Press Start 2P', monospace, sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.35);
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+#btn-jump.active, #btn-jump:active {
+  background: rgba(255, 50, 40, 0.95);
+  border-color: #ffd700;
+  color: #ffffff;
+  transform: scale(0.90);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 215, 0, 0.7);
+}
+
+.btn-text {
+  pointer-events: none;
+}
+
+/* --- 5. Celebratory Victory Modal Overlay & Reward Button --- */
+.victory-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100; /* Must exceed HUD (10) and Touch Controls (20) */
+  pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(10, 5, 25, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+  touch-action: auto;
+  padding: 16px;
+}
+
+.victory-overlay.hidden {
+  display: none !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.victory-card {
+  position: relative;
+  width: 100%;
+  max-width: 328px;
+  max-height: 90vh;
+  background: linear-gradient(180deg, #2a1548 0%, #150a28 100%);
+  border: 3px solid #FFD700;
+  border-radius: 16px;
+  padding: 20px 14px;
+  text-align: center;
+  color: #FFFFFF;
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.45), inset 0 0 15px rgba(255, 215, 0, 0.15);
+  animation: victoryPopIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+}
+
+@keyframes victoryPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.75) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.victory-sparkles {
+  font-size: 18px;
+  margin-bottom: 6px;
+  letter-spacing: 4px;
+  animation: sparkleBounce 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes sparkleBounce {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-4px); }
+}
+
+.victory-title {
+  font-family: 'Press Start 2P', monospace, sans-serif;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #FFD700;
+  text-shadow: 2px 2px 0px #000000, 0 0 10px rgba(255, 215, 0, 0.7);
+  margin-bottom: 10px;
+}
+
+.victory-subtitle {
+  font-family: 'Press Start 2P', monospace, sans-serif;
+  font-size: 8px;
+  line-height: 1.5;
+  color: #E0E0E0;
+  text-shadow: 1px 1px 0px #000000;
+  margin-bottom: 16px;
+}
+
+.victory-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 6px;
+  margin-bottom: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-title {
+  font-size: 7px;
+  color: #FFB300;
+  letter-spacing: 0.5px;
+}
+
+.stat-number {
+  font-size: 10px;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+/* --- EXACT REQUIRED REWARD BUTTON (R3) --- */
+.reward-button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 54px;
+  padding: 12px 10px;
+  margin: 12px 0 10px 0;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA000 50%, #FF6F00 100%);
+  color: #1A0C00 !important;
+  font-family: 'Press Start 2P', monospace, sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.45;
+  text-align: center;
+  text-decoration: none;
+  border: 2px solid #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(255, 160, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  animation: rewardButtonPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes rewardButtonPulse {
+  0% {
+    box-shadow: 0 4px 15px rgba(255, 160, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 24px rgba(255, 215, 0, 0.9), 0 0 12px rgba(255, 255, 255, 0.8), inset 0 2px 6px rgba(255, 255, 255, 0.9);
+    transform: scale(1.025);
+  }
+  100% {
+    box-shadow: 0 4px 15px rgba(255, 160, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+    transform: scale(1);
+  }
+}
+
+.reward-button:hover, .reward-button:focus {
+  transform: scale(1.03);
+  box-shadow: 0 6px 25px rgba(255, 215, 0, 0.95);
+  outline: none;
+}
+
+.reward-button:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(255, 160, 0, 0.8);
+}
+
+/* --- REPLAY BUTTON (#btn-replay) --- */
+.replay-button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 10px 8px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  font-family: 'Press Start 2P', monospace, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  transition: background-color 0.1s ease, transform 0.08s ease;
+}
+
+.replay-button:hover, .replay-button:focus {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #FFFFFF;
+  outline: none;
+}
+
+.replay-button:active {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(0.96);
+}
+
+.victory-hint {
+  font-size: 7px;
+  line-height: 1.4;
+  color: #B0BEC5;
+  margin-top: 6px;
+}
