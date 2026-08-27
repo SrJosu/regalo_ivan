@@ -12,7 +12,7 @@
   'use strict';
 
   const TILE_SIZE = 16;
-  const LEVEL_WIDTH = 130; // 130 tiles * 16px = 2080px
+  const LEVEL_WIDTH = 170; // 170 tiles * 16px = 2720px: aventura ampliada
   const LEVEL_HEIGHT = 16; // 16 tiles * 16px = 256px
   const GROUND_ROW = 13;   // Ground floor starts at row 13 (y = 208px)
 
@@ -26,7 +26,8 @@
   /**
    * Factory to generate the default World 2026 layout for Iván's Birthday.
    */
-  function createLevelData() {
+  function createLevelData(difficulty = 'normal') {
+    difficulty = ['facil', 'normal', 'dificil'].includes(difficulty) ? difficulty : 'normal';
     // 2D Array: grid[ty][tx]
     const grid = [];
     for (let ty = 0; ty < LEVEL_HEIGHT; ty++) {
@@ -34,8 +35,17 @@
     }
 
     // 1. Ground & Underground Filler
-    // Pits at: [34, 35], [60, 61, 62], [88, 89]
-    const pits = new Set([34, 35, 60, 61, 62, 88, 89]);
+    // Huecos escalonados: obligan a alternar carrera, frenada y salto largo.
+    const pits = new Set([
+      34, 35, 60, 61, 62, 88, 89,
+      105, 106, 107, 116, 117, 118,
+      127, 128, 129, 130, 131, 142, 143, 144
+    ]);
+    if (difficulty === 'facil') {
+      [34, 35, 60, 61, 62, 88, 89, 116, 117, 118, 127, 128, 129, 130, 131].forEach(x => pits.delete(x));
+    } else if (difficulty === 'dificil') {
+      [36, 37, 63, 64, 90, 91, 119, 120, 132, 133, 145].forEach(x => pits.add(x));
+    }
     for (let tx = 0; tx < LEVEL_WIDTH; tx++) {
       if (!pits.has(tx)) {
         grid[GROUND_ROW][tx] = 'ground';
@@ -62,6 +72,10 @@
     placePipe(38, 4); // Pipe 3 (height 4)
     placePipe(66, 2); // Pipe 4 (height 2)
     placePipe(76, 3); // Pipe 5 (height 3)
+    placePipe(101, 3); // Tramo 4: entrada estrecha
+    placePipe(111, 4); // Tramo 4: tubería alta
+    placePipe(122, 2); // Tramo 5
+    placePipe(136, 4); // Tramo final
 
     // 3. Question & Brick Blocks
     // Area 1: Initial blocks (x: 8..14)
@@ -96,6 +110,21 @@
     grid[9][84] = 'brick';
     grid[9][85] = 'question';
 
+    // Tramo 4: techo bajo y bloques alternos sobre los huecos.
+    [98, 99, 102, 103, 109, 110, 113, 114, 120, 121].forEach(tx => {
+      grid[8][tx] = tx % 2 ? 'question' : 'brick';
+    });
+    [108, 115, 119, 124, 125].forEach(tx => {
+      grid[5][tx] = 'brick';
+    });
+
+    // Tramo 5: escalones suspendidos y una ruta superior opcional.
+    for (let tx = 132; tx <= 141; tx += 2) {
+      grid[9][tx] = 'brick';
+      grid[7][tx + 1] = 'question';
+    }
+    [145, 146, 147, 148].forEach(tx => { grid[6][tx] = 'brick'; });
+
     // 4. End Pyramid / Staircase (x: 94..102)
     for (let step = 1; step <= 8; step++) {
       const tx = 94 + step;
@@ -106,30 +135,30 @@
     // Single top step
     grid[GROUND_ROW - 8][103] = 'brick';
 
-    // 5. Goal Flagpole (x = 107)
-    const poleX = 107;
+    // 5. Goal Flagpole (x = 147), después del nuevo tramo de desafío
+    const poleX = 147;
     grid[GROUND_ROW - 9][poleX] = 'flagpole_top';
     for (let y = GROUND_ROW - 8; y < GROUND_ROW; y++) {
       grid[y][poleX] = 'flagpole_shaft';
     }
 
-    // 6. Grand Birthday Castle (x: 112..116, y: GROUND_ROW - 4 .. GROUND_ROW - 1)
-    for (let cx = 112; cx <= 116; cx++) {
+    // 6. Grand Birthday Castle (x: 152..156, y: GROUND_ROW - 4 .. GROUND_ROW - 1)
+    for (let cx = 152; cx <= 156; cx++) {
       for (let cy = GROUND_ROW - 4; cy < GROUND_ROW; cy++) {
         grid[cy][cx] = 'castle_brick';
       }
     }
     // Party Battlements with festive flags
-    grid[GROUND_ROW - 5][112] = 'castle_battlement';
-    grid[GROUND_ROW - 5][114] = 'castle_battlement';
-    grid[GROUND_ROW - 5][116] = 'castle_battlement';
+    grid[GROUND_ROW - 5][152] = 'castle_battlement';
+    grid[GROUND_ROW - 5][154] = 'castle_battlement';
+    grid[GROUND_ROW - 5][156] = 'castle_battlement';
 
     // Grand Centerpiece 3-Tier Birthday Cake atop central battlement
-    grid[GROUND_ROW - 6][114] = 'castle_cake';
+    grid[GROUND_ROW - 6][154] = 'castle_cake';
 
     // Castle Door (Arched Mahogany)
-    grid[GROUND_ROW - 1][114] = 'castle_door';
-    grid[GROUND_ROW - 2][114] = 'castle_door';
+    grid[GROUND_ROW - 1][154] = 'castle_door';
+    grid[GROUND_ROW - 2][154] = 'castle_door';
 
     // 7. Floating Sky Banner in Clouds (Columns 4 to 16)
     const skyBanner = {
@@ -172,6 +201,22 @@
         y: (GROUND_ROW - 1) * TILE_SIZE,
         title: 'KM 30',
         lines: ['🏰 ¡LA TARTA GIGANTE Y TU REGALO', 'TE ESPERAN EN EL CASTILLO!']
+      },
+      {
+        id: 5,
+        col: 120,
+        x: 120 * TILE_SIZE,
+        y: (GROUND_ROW - 1) * TILE_SIZE,
+        title: 'KM 40',
+        lines: ['⚠️ ZONA DE PARKOUR:', '¡No te quedes quieto!']
+      },
+      {
+        id: 6,
+        col: 146,
+        x: 146 * TILE_SIZE,
+        y: (GROUND_ROW - 1) * TILE_SIZE,
+        title: 'KM 50',
+        lines: ['🏁 ÚLTIMO RETO:', '¡El regalo está muy cerca!']
       }
     ];
 
@@ -188,7 +233,26 @@
       { type: 'grumpy', x: 82 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE },
       { type: 'doge',   x: 86 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE },
       { type: 'popcat', x: 91 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
+      ,{ type: 'grumpy', x: 97 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
+      ,{ type: 'doge', x: 104 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
+      ,{ type: 'popcat', x: 110 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
+      ,{ type: 'grumpy', x: 119 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
+      ,{ type: 'doge', x: 126 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
+      ,{ type: 'popcat', x: 134 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
+      ,{ type: 'grumpy', x: 140 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
+      ,{ type: 'doge', x: 145 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
     ];
+    if (difficulty === 'facil') {
+      enemySpawns.splice(2, 1);
+      enemySpawns.splice(6, 2);
+    } else if (difficulty === 'dificil') {
+      enemySpawns.push(
+        { type: 'popcat', x: 116 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE },
+        { type: 'grumpy', x: 128 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE },
+        { type: 'doge', x: 138 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE },
+        { type: 'popcat', x: 143 * TILE_SIZE, y: (GROUND_ROW - 1) * TILE_SIZE }
+      );
+    }
 
     const coinSpawns = [
       { x: 19.5 * TILE_SIZE, y: (GROUND_ROW - 4) * TILE_SIZE },
@@ -200,10 +264,17 @@
       { x: 61.5 * TILE_SIZE, y: 5 * TILE_SIZE },
       { x: 73 * TILE_SIZE, y: (GROUND_ROW - 2) * TILE_SIZE },
       { x: 74 * TILE_SIZE, y: (GROUND_ROW - 2) * TILE_SIZE }
+      ,{ x: 99 * TILE_SIZE, y: 6 * TILE_SIZE }
+      ,{ x: 108 * TILE_SIZE, y: 4 * TILE_SIZE }
+      ,{ x: 114 * TILE_SIZE, y: 3 * TILE_SIZE }
+      ,{ x: 124 * TILE_SIZE, y: 5 * TILE_SIZE }
+      ,{ x: 133 * TILE_SIZE, y: 6 * TILE_SIZE }
+      ,{ x: 141 * TILE_SIZE, y: 5 * TILE_SIZE }
     ];
 
     return {
       grid,
+      pitColumns: pits,
       skyBanner,
       signposts,
       enemySpawns,
@@ -213,7 +284,7 @@
         topY: (GROUND_ROW - 9) * TILE_SIZE,
         bottomY: (GROUND_ROW - 1) * TILE_SIZE
       },
-      castleDoorX: 114 * TILE_SIZE
+      castleDoorX: 154 * TILE_SIZE
     };
   }
 
@@ -237,8 +308,9 @@
     }
 
     reset() {
-      const data = createLevelData();
+      const data = createLevelData(this.difficulty);
       this.grid = data.grid;
+      this.pitColumns = data.pitColumns;
       this.skyBanner = data.skyBanner;
       this.signposts = data.signposts;
       this.enemySpawns = data.enemySpawns;
@@ -256,6 +328,15 @@
       if (ty >= this.HEIGHT) return false; // Falling below is pit hazard, not solid floor
       const tile = this.grid[ty][tx];
       return tile ? SOLID_TILES.has(tile) : false;
+    }
+
+    /**
+     * Returns true only for a genuine floor-to-abyss gap.  Floating blocks
+     * remain valid platforms, while walking into the void always drops Iván.
+     */
+    isPitAtWorldX(worldX) {
+      const tx = Math.floor(worldX / TILE_SIZE);
+      return !!this.pitColumns && this.pitColumns.has(tx);
     }
 
     getTile(tx, ty) {
@@ -303,19 +384,19 @@
     }
 
     /**
-     * Updates camera tracking following the player smoothly.
-     * Enforces classic Mario left-lock rule (camera never scrolls left).
+     * Updates camera tracking following the player smoothly in both directions (left and right).
      */
     updateCamera(playerX, viewportWidth) {
-      const targetX = playerX - viewportWidth * 0.35;
-      if (targetX > this.cameraX) {
-        this.cameraX = targetX;
-      }
+      // Keep player centered / at 40% of the screen
+      const targetX = playerX - viewportWidth * 0.40;
+      this.cameraX = targetX;
+
       // Clamp at right level boundary
       const maxCameraX = this.worldPixelWidth - viewportWidth;
       if (this.cameraX > maxCameraX) {
         this.cameraX = maxCameraX;
       }
+      // Clamp at left level boundary
       if (this.cameraX < 0) {
         this.cameraX = 0;
       }
@@ -524,8 +605,11 @@
     LEVEL_HEIGHT,
     GROUND_ROW,
     Level,
-    createLevel() {
-      return new Level();
+    createLevel(difficulty = 'normal') {
+      const level = new Level();
+      level.difficulty = difficulty;
+      level.reset();
+      return level;
     }
   };
 

@@ -39,12 +39,13 @@
 
       // Game States: 'LOADING', 'START', 'PLAYING', 'WIN', 'GAMEOVER'
       this.state = 'LOADING';
+      this.difficulty = 'normal';
 
       // Gameplay Statistics
       this.score = 0;
       this.coins = 0;
       this.lives = 3;
-      this.time = 400;
+      this.time = this.difficulty === 'facil' ? 500 : this.difficulty === 'dificil' ? 330 : 400;
       this.timeTimer = 0;
 
       // Entities & World
@@ -108,6 +109,20 @@
         this.winScore = document.getElementById('win-score');
         this.winCoins = document.getElementById('win-coins');
         this.winTime = document.getElementById('win-time');
+
+        if (this.rewardBtn) {
+          const handleRewardClick = (e) => {
+            const url = this.rewardBtn.getAttribute('href');
+            if (url) {
+              window.open(url, '_blank', 'noopener,noreferrer');
+            }
+          };
+          this.rewardBtn.addEventListener('touchend', (e) => {
+            e.stopPropagation();
+            if (e.cancelable) e.preventDefault();
+            handleRewardClick(e);
+          });
+        }
 
         if (this.btnReplay) {
           const handleReplay = (e) => {
@@ -211,7 +226,7 @@
 
       // Create Level
       if (global.GameLevel && global.GameLevel.createLevel) {
-        this.level = global.GameLevel.createLevel();
+        this.level = global.GameLevel.createLevel(this.difficulty);
       } else {
         this.level = null;
       }
@@ -268,8 +283,16 @@
     restart() {
       this.score = 0;
       this.coins = 0;
-      this.lives = 3;
+      this.lives = this.difficulty === 'facil' ? 5 : this.difficulty === 'dificil' ? 2 : 3;
       this.startNewGame();
+    }
+
+    setDifficulty(difficulty) {
+      if (!['facil', 'normal', 'dificil'].includes(difficulty)) return;
+      this.difficulty = difficulty;
+      this.startNewGame();
+      this.state = 'PLAYING';
+      this.start();
     }
 
     /**

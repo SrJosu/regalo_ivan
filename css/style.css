@@ -101,6 +101,21 @@ html, body {
   touch-action: none;
 }
 
+.difficulty-overlay { position: fixed; inset: 0; z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 18px; background: rgba(8, 12, 35, .88); }
+.difficulty-overlay.hidden { display: none; }
+.difficulty-card { width: min(100%, 340px); padding: 24px 18px 18px; border: 3px solid #ffd54f; border-radius: 18px; background: linear-gradient(160deg, #202752, #11152f); color: #fff; text-align: center; box-shadow: 0 12px 40px #0009; }
+.difficulty-card h2 { margin: 8px 0; font: 700 18px 'Press Start 2P', monospace; color: #ffd54f; }
+.difficulty-card p { margin: 10px 0 18px; font-weight: 700; }
+.difficulty-icon { font-size: 38px; }
+.difficulty-options { display: grid; gap: 10px; }
+.difficulty-btn { min-height: 64px; border: 2px solid #fff; border-radius: 12px; color: #fff; font: 700 14px 'Press Start 2P', monospace; cursor: pointer; touch-action: manipulation; }
+.difficulty-btn small { display: block; margin-top: 8px; font: 700 11px Rajdhani, sans-serif; }
+.difficulty-btn.easy { background: #16866b; }
+.difficulty-btn.normal { background: #265bb0; }
+.difficulty-btn.hard { background: #a6324b; }
+.difficulty-btn:active { transform: scale(.97); filter: brightness(1.25); }
+.difficulty-cancel { margin-top: 14px; padding: 10px 22px; border: 1px solid #aaa; border-radius: 9px; background: transparent; color: #fff; font-weight: 700; touch-action: manipulation; }
+
 .dpad-container {
   display: flex;
   gap: 14px;
@@ -411,6 +426,7 @@ html, body {
   z-index: 1000;
   padding: 20px;
   box-sizing: border-box;
+  touch-action: manipulation;
 }
 
 .menu-cabinet-header {
@@ -453,6 +469,7 @@ html, body {
   cursor: pointer;
   pointer-events: auto;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
   position: relative;

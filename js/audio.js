@@ -62,6 +62,9 @@
         }
       }
     }
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
     return ctx;
   }
 

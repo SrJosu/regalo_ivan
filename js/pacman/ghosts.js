@@ -81,7 +81,7 @@ class Ghost {
     return NO_UP_ZONES.some(z => z.col === col && z.row === row);
   }
 
-  calculateTargetTile(pacman, blinky, currentGlobalMode, pelletsRemaining) {
+  calculateTargetTile(pacman, blinky, currentGlobalMode, pelletsRemaining, aiAggression = 1) {
     const pCol = Math.floor(pacman.x / TILE_SIZE);
     const pRow = Math.floor(pacman.y / TILE_SIZE);
 
@@ -101,11 +101,15 @@ class Ghost {
     if (effectiveMode === GHOST_MODES.CHASE) {
       switch (this.name) {
         case 'Blinky':
-          return { col: pCol, row: pRow };
+          return {
+            col: pCol + pacman.dir.x * (aiAggression > 1.1 ? 2 : 0),
+            row: pRow + pacman.dir.y * (aiAggression > 1.1 ? 2 : 0)
+          };
 
         case 'Pinky': {
-          let targetCol = pCol + pacman.dir.x * 4;
-          let targetRow = pRow + pacman.dir.y * 4;
+          const lookAhead = aiAggression > 1.1 ? 6 : 4;
+          let targetCol = pCol + pacman.dir.x * lookAhead;
+          let targetRow = pRow + pacman.dir.y * lookAhead;
           if (pacman.dir === DIRS.UP) {
             targetCol -= 4;
           }
@@ -173,14 +177,14 @@ class Ghost {
     return valid;
   }
 
-  update(dt, pacman, blinky, currentGlobalMode, pelletsEaten, pelletsRemaining, level, speedMultiplier = 1.0) {
+  update(dt, pacman, blinky, currentGlobalMode, pelletsEaten, pelletsRemaining, level, speedMultiplier = 1.0, aiAggression = 1.0) {
     this.animationTimer += dt * 8;
     this.prevTile = { col: Math.floor(this.x / TILE_SIZE), row: Math.floor(this.y / TILE_SIZE) };
 
     // 1. Salida de la casa de fantasmas
     if (this.isInsideHouse) {
       let canLeave = false;
-      const levelMultiplier = Math.max(0.4, 1 - (level - 1) * 0.15);
+      const levelMultiplier = Math.max(0.3, (1 - (level - 1) * 0.15) / aiAggression);
       const effectiveLimit = Math.floor(this.pelletLimit * levelMultiplier);
 
       this.houseTimer += dt;
@@ -224,7 +228,7 @@ class Ghost {
     }
 
     // 3. Velocidad
-    let currentSpeed = this.speed * speedMultiplier;
+    let currentSpeed = this.speed * speedMultiplier * aiAggression;
     if (this.isInTunnel()) {
       currentSpeed *= 0.5;
     } else if (this.mode === GHOST_MODES.FRIGHTENED) {
@@ -255,7 +259,7 @@ class Ghost {
       this.y = centerTileY;
       this.lastDecidedTile = { col: currentTileX, row: currentTileY };
 
-      this.targetTile = this.calculateTargetTile(pacman, blinky, currentGlobalMode, pelletsRemaining);
+      this.targetTile = this.calculateTargetTile(pacman, blinky, currentGlobalMode, pelletsRemaining, aiAggression);
       const validDirs = this.getNextValidDirections(currentTileX, currentTileY);
 
       if (validDirs.length > 0) {
@@ -346,7 +350,7 @@ class Ghost {
       ctx.shadowBlur = 12;
     } else {
       ctx.shadowColor = bodyColor;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = (window.pacmanLowPerf ? 2 : 8);
     }
 
     ctx.fillStyle = bodyColor;

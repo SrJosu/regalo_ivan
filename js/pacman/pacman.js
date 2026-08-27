@@ -182,7 +182,7 @@ class Pacman {
 
     ctx.fillStyle = '#ffff00';
     ctx.shadowColor = '#ffff00';
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = (window.pacmanLowPerf ? 2 : 8);
 
     const startAngle = this.mouthAngle * Math.PI;
     const endAngle = (2 - this.mouthAngle) * Math.PI;

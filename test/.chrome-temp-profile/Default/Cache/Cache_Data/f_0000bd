@@ -62,6 +62,9 @@
         }
       }
     }
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
     return ctx;
   }
 
@@ -804,10 +807,28 @@
     } catch (e) {}
   }
 
+  function stopAll() {
+    if (masterGain && ctx) {
+      try {
+        masterGain.gain.setValueAtTime(0, ctx.currentTime);
+      } catch (e) {}
+    }
+  }
+
+  function resumeAudio() {
+    if (masterGain && ctx) {
+      try {
+        masterGain.gain.setValueAtTime(0.70, ctx.currentTime);
+      } catch (e) {}
+    }
+  }
+
   // Public GameAudio Interface Contract
   const GameAudio = {
     init,
     unlockAudio,
+    stopAll,
+    resumeAudio,
     playJump,
     playCoin,
     playStomp,

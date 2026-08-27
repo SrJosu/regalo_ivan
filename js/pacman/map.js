@@ -127,7 +127,7 @@ class GameMap {
           ctx.strokeStyle = wallColor;
           ctx.lineWidth = 2;
           ctx.shadowColor = wallColor;
-          ctx.shadowBlur = 4;
+          ctx.shadowBlur = (window.pacmanLowPerf ? 1 : 4);
 
           // Dibujar contornos basados en vecinos para estética arcade pulida
           const up = this.isWall(c, r - 1);

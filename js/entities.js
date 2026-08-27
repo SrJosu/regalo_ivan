@@ -559,6 +559,19 @@
         // 2. Resolve Map Collisions
         const col = global.GamePhysics.resolveMapCollisions(this, map, dt);
 
+        // Do not let a one-pixel overlap with the edge of a tile keep the
+        // player hovering over a real pit.  The centre of the player's feet
+        // decides: suspended bricks are above ground and therefore unaffected.
+        const feetCenterX = this.x + this.width / 2;
+        const groundY = map ? map.GROUND_ROW * 16 : 208;
+        if (map && typeof map.isPitAtWorldX === 'function' &&
+            map.isPitAtWorldX(feetCenterX) && this.y + this.height >= groundY - 0.5) {
+          this.onGround = false;
+          this.isJumping = false;
+          this.vy = Math.max(this.vy, 45);
+          this.y += 1;
+        }
+
         // Ceiling collision block interaction (Question & Brick blocks)
         if (col.collidedY && col.hitCeilingTile && onBlockHit) {
           onBlockHit(col.hitCeilingTile.tx, col.hitCeilingTile.ty);

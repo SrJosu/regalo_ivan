@@ -49,6 +49,34 @@
     <p class="menu-footer-hint">Toca una opción o usa el teclado para empezar</p>
   </div>
 
+  <div id="difficulty-modal" class="difficulty-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="difficulty-title">
+    <div class="difficulty-card">
+      <div class="difficulty-icon">🎮</div>
+      <h2 id="difficulty-title">ELIGE TU RETO</h2>
+      <p>¿Cómo de valiente está hoy Ibon?</p>
+      <div class="difficulty-options">
+        <button class="difficulty-btn easy" data-difficulty="facil">😊 FÁCIL<small>Más vidas · más tiempo</small></button>
+        <button class="difficulty-btn normal" data-difficulty="normal">😎 NORMAL<small>La aventura original</small></button>
+        <button class="difficulty-btn hard" data-difficulty="dificil">🔥 DIFÍCIL<small>Más trampas · menos margen</small></button>
+      </div>
+      <button id="difficulty-cancel" class="difficulty-cancel" type="button">VOLVER</button>
+    </div>
+  </div>
+
+  <div id="pacman-difficulty-modal" class="difficulty-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pacman-difficulty-title">
+    <div class="difficulty-card pacman-difficulty-card">
+      <div class="difficulty-icon">🟡</div>
+      <h2 id="pacman-difficulty-title">ELIGE LA RONDA</h2>
+      <p>¿Cómo va el carajillo, cuñao?</p>
+      <div class="difficulty-options">
+        <button class="difficulty-btn easy pacman-difficulty-btn" data-pacman-difficulty="facil">😌 TRANQUI<small>4 vidas · fantasmas más lentos</small></button>
+        <button class="difficulty-btn normal pacman-difficulty-btn" data-pacman-difficulty="normal">😎 DE BARRA<small>3 vidas · desafío equilibrado</small></button>
+        <button class="difficulty-btn hard pacman-difficulty-btn" data-pacman-difficulty="dificil">🔥 CUÑAO PRO<small>2 vidas · IA rápida y más lista</small></button>
+      </div>
+      <button id="pacman-difficulty-cancel" class="difficulty-cancel" type="button">VOLVER</button>
+    </div>
+  </div>
+
   <!-- Botón flotante para volver al Menú Principal en cualquier momento -->
   <button id="btn-return-menu" class="btn-return-menu hidden" type="button" aria-label="Volver al Menú Principal">
     ◀ MENÚ
@@ -281,6 +309,10 @@
               <input type="checkbox" id="debug-ai-toggle">
             </div>
             <div class="setting-item">
+              <label for="low-perf-toggle">Modo bajo rendimiento:</label>
+              <input type="checkbox" id="low-perf-toggle">
+            </div>
+            <div class="setting-item">
               <label for="crt-toggle">Efecto CRT Scanlines:</label>
               <input type="checkbox" id="crt-toggle" checked>
             </div>
@@ -356,11 +388,17 @@
       const marioContainer = document.getElementById('game-container');
       const pacmanCabinet = document.getElementById('arcade-cabinet');
       const btnReturnMenu = document.getElementById('btn-return-menu');
+      const difficultyModal = document.getElementById('difficulty-modal');
+      const difficultyCancel = document.getElementById('difficulty-cancel');
+      const pacmanDifficultyModal = document.getElementById('pacman-difficulty-modal');
+      const pacmanDifficultyCancel = document.getElementById('pacman-difficulty-cancel');
 
       const btnSelectMario = document.getElementById('btn-select-mario');
       const btnSelectPacman = document.getElementById('btn-select-pacman');
 
       function showMenu() {
+        difficultyModal.classList.add('hidden');
+        pacmanDifficultyModal.classList.add('hidden');
         mainMenu.classList.remove('hidden');
         marioContainer.classList.add('hidden');
         pacmanCabinet.classList.add('hidden');
@@ -384,6 +422,12 @@
       }
 
       function launchMario() {
+        pacmanDifficultyModal.classList.add('hidden');
+        difficultyModal.classList.remove('hidden');
+      }
+
+      function startMarioWithDifficulty(difficulty) {
+        difficultyModal.classList.add('hidden');
         mainMenu.classList.add('hidden');
         marioContainer.classList.remove('hidden');
         pacmanCabinet.classList.add('hidden');
@@ -405,14 +449,27 @@
         // Initialize or resume Mario game
         if (window.Game) {
           if (!window.Game.canvas) {
-            window.Game.init(true);
+            window.Game.init(false).then(() => window.Game.setDifficulty(difficulty));
           } else {
-            window.Game.start();
+            window.Game.setDifficulty(difficulty);
           }
         }
       }
 
+      document.querySelectorAll('.difficulty-btn').forEach((button) => {
+        bindTap(button, () => startMarioWithDifficulty(button.dataset.difficulty));
+      });
+      bindTap(difficultyCancel, () => difficultyModal.classList.add('hidden'));
+
       function launchPacman() {
+        difficultyModal.classList.add('hidden');
+        pacmanDifficultyModal.classList.remove('hidden');
+      }
+
+      function startPacmanWithDifficulty(difficulty) {
+        // El selector de Ibon Bros no debe quedar activo al cambiar a Pac-Man.
+        difficultyModal.classList.add('hidden');
+        pacmanDifficultyModal.classList.add('hidden');
         mainMenu.classList.add('hidden');
         marioContainer.classList.add('hidden');
         pacmanCabinet.classList.remove('hidden');
@@ -427,27 +484,46 @@
         }
 
         // Resume Pacman audio engine
-        if (window.soundEngine && window.soundEngine.resumeAudio) {
-          window.soundEngine.resumeAudio();
+        if (window.soundEngine) {
+          window.soundEngine.init();
+          if (window.soundEngine.resumeAudio) window.soundEngine.resumeAudio();
         }
 
         // Initialize or resume Pacman
         if (window.initPacmanGame) {
-          window.initPacmanGame();
+          const pacmanGame = window.initPacmanGame();
+          if (pacmanGame && pacmanGame.setDifficulty) pacmanGame.setDifficulty(difficulty);
         }
       }
 
-      if (btnSelectMario) {
-        btnSelectMario.addEventListener('click', launchMario);
+      document.querySelectorAll('.pacman-difficulty-btn').forEach((button) => {
+        bindTap(button, () => startPacmanWithDifficulty(button.dataset.pacmanDifficulty));
+      });
+      bindTap(pacmanDifficultyCancel, () => pacmanDifficultyModal.classList.add('hidden'));
+
+      function bindTap(el, handler) {
+        if (!el) return;
+        let handledAt = 0;
+        const run = (e) => {
+          const now = Date.now();
+          if (now - handledAt < 450) return;
+          handledAt = now;
+          handler(e);
+        };
+        el.addEventListener('click', run);
+        el.addEventListener('touchend', (e) => {
+          e.stopPropagation();
+          if (e.cancelable) e.preventDefault();
+          run(e);
+        }, { passive: false });
+        el.addEventListener('pointerup', (e) => {
+          if (e.pointerType === 'touch') run(e);
+        });
       }
 
-      if (btnSelectPacman) {
-        btnSelectPacman.addEventListener('click', launchPacman);
-      }
-
-      if (btnReturnMenu) {
-        btnReturnMenu.addEventListener('click', showMenu);
-      }
+      bindTap(btnSelectMario, launchMario);
+      bindTap(btnSelectPacman, launchPacman);
+      bindTap(btnReturnMenu, showMenu);
 
       function checkRoute() {
         const hash = window.location.hash;

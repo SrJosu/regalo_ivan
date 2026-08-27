@@ -91,6 +91,9 @@
     if (e && e.preventDefault) {
       e.preventDefault();
     }
+    if (global.GameAudio && global.GameAudio.unlockAudio) {
+      global.GameAudio.unlockAudio();
+    }
     const touches = (e && e.changedTouches) ? Array.from(e.changedTouches) : [{ identifier: 0 }];
     for (const touch of touches) {
       touchMap.set(touch.identifier, action);
@@ -99,29 +102,33 @@
   }
 
   function handleTouchEnd(e) {
-    if (e && e.preventDefault) {
-      e.preventDefault();
-    }
     const touches = (e && e.changedTouches) ? Array.from(e.changedTouches) : null;
+    let hadGameTouch = false;
     if (touches) {
       for (const touch of touches) {
-        touchMap.delete(touch.identifier);
+        if (touchMap.has(touch.identifier)) {
+          hadGameTouch = true;
+          touchMap.delete(touch.identifier);
+        }
       }
     } else {
       touchMap.clear();
+    }
+    if (hadGameTouch && e && e.preventDefault && e.target && e.target.classList && e.target.classList.contains('touch-btn')) {
+      e.preventDefault();
     }
     updateButtonVisuals();
   }
 
   function handleTouchMove(e) {
     if (!e || !e.changedTouches) return;
-    if (e.preventDefault) e.preventDefault();
 
     // Check if touch moved between d-pad buttons
     const leftRect = domBtnLeft && domBtnLeft.getBoundingClientRect ? domBtnLeft.getBoundingClientRect() : null;
     const rightRect = domBtnRight && domBtnRight.getBoundingClientRect ? domBtnRight.getBoundingClientRect() : null;
     const jumpRect = domBtnJump && domBtnJump.getBoundingClientRect ? domBtnJump.getBoundingClientRect() : null;
 
+    let handled = false;
     for (const touch of Array.from(e.changedTouches)) {
       if (!touchMap.has(touch.identifier)) continue;
 
@@ -139,7 +146,11 @@
 
       if (newAction) {
         touchMap.set(touch.identifier, newAction);
+        handled = true;
       }
+    }
+    if (handled && e.preventDefault) {
+      e.preventDefault();
     }
     updateButtonVisuals();
   }

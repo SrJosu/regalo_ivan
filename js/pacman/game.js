@@ -28,6 +28,31 @@ const FRUIT_TABLE = [
   { name: 'Llave', points: 5000, icon: '🔑', minLevel: 8 }
 ];
 
+const CUÑAO_MEMES = {
+  streak: [
+    '¡NI TAN MAL, CUÑAO!',
+    '¡MÁS FINO QUE EL JAMÓN!',
+    '¡VENGA, OTRA Y A CASA!',
+    '¡ESTO CON CARAJILLO ENTRA SOLO!'
+  ],
+  level: [
+    '¡MAZE ARREGLADO, JEFE!',
+    '¡OTRA RONDA Y CERRAMOS!',
+    '¡ASÍ SE JUEGA EN LA TERRAZA!'
+  ],
+  ghost: [
+    '¡FANTASMA, A LA COLA DEL PAN!',
+    '¡MÁS PERDIDO QUE UN PULPO EN UN GARAJE!',
+    '¡A TOMAR POR SACO, FANTASMA!'
+  ]
+};
+
+const PACMAN_DIFFICULTIES = {
+  facil: { lives: 4, playerSpeed: 0.88, ghostAggression: 0.78, powerTime: 1.25, label: 'TRANQUI' },
+  normal: { lives: 3, playerSpeed: 1.0, ghostAggression: 1.0, powerTime: 1.0, label: 'DE BARRA' },
+  dificil: { lives: 2, playerSpeed: 1.10, ghostAggression: 1.18, powerTime: 0.72, label: 'CUÑAO PRO' }
+};
+
 // Tabla Oficial de Duración de Energizer en Segundos (Namco 1980)
 const FRIGHTENED_TIME_TABLE = [
   6.0, // Nivel 1
@@ -59,6 +84,15 @@ class Game {
     this.level = 1;
     this.lives = 3;
     this.state = GAME_STATES.READY;
+    // Auto‑detect Android and enable low‑performance mode
+    const isAndroid = /Android/.test(navigator.userAgent);
+    window.pacmanLowPerf = isAndroid;
+    document.body.classList.toggle('low-perf', window.pacmanLowPerf);
+    // Global toggle function for UI
+    window.setPacmanPerfMode = function(highPerf) {
+      window.pacmanLowPerf = !highPerf;
+      document.body.classList.toggle('low-perf', window.pacmanLowPerf);
+    };
 
     this.stats = {
       ghostsEaten: 0,
@@ -104,6 +138,10 @@ class Game {
     this.wasFrightenedPlaying = false;
 
     this.activeFruit = null;
+    this.memeSurprise = null;
+    this.surpriseMilestones = new Set();
+    this.pelletStreak = 0;
+    this.memeToast = null;
     this.shakeIntensity = 0;
     this.shakeDecay = 0.9;
 
@@ -111,7 +149,12 @@ class Game {
     this.highContrast = false;
     this.debugAI = false;
     this.gameMode = 'normal';
-    this.speedMultiplier = 1.0;
+    this.selectedSpeedMultiplier = 1.0;
+    this.difficulty = 'normal';
+    this.difficultyProfile = PACMAN_DIFFICULTIES.normal;
+    this.aiAggression = this.difficultyProfile.ghostAggression;
+    this.speedMultiplier = this.difficultyProfile.playerSpeed;
+    this.roundChallenge = null;
 
     this.lastTime = 0;
     this.stateTimer = 0;
@@ -120,6 +163,7 @@ class Game {
 
     this.initUI();
     this.initInputs();
+    this.createRoundChallenge();
     this.updateHUD();
   }
 
@@ -152,6 +196,7 @@ class Game {
       globalStatMaxlevel: document.getElementById('global-stat-maxlevel'),
       settingsModal: document.getElementById('settings-modal'),
       settingsToggleBtn: document.getElementById('settings-toggle-btn'),
+      lowPerfToggle: document.getElementById('low-perf-toggle'),
       closeSettingsBtn: document.getElementById('close-settings-btn'),
       volumeSlider: document.getElementById('volume-slider'),
       themeSelect: document.getElementById('theme-select'),
@@ -224,6 +269,14 @@ class Game {
       }
     });
 
+    // Low‑performance toggle handling
+    if (this.dom.lowPerfToggle) {
+      this.dom.lowPerfToggle.checked = window.pacmanLowPerf;
+      this.dom.lowPerfToggle.addEventListener('change', e => {
+        window.setPacmanPerfMode(e.target.checked);
+      });
+    }
+
     this.dom.btnPauseQuick.addEventListener('click', () => this.togglePause());
 
     this.dom.btnSoundQuick.addEventListener('click', () => {
@@ -268,12 +321,13 @@ class Game {
     this.dom.speedSelect.addEventListener('change', (e) => {
       this.gameMode = e.target.value;
       if (this.gameMode === 'turbo') {
-        this.speedMultiplier = 1.35;
+        this.selectedSpeedMultiplier = 1.20;
       } else if (this.gameMode === 'easy') {
-        this.speedMultiplier = 0.85;
+        this.selectedSpeedMultiplier = 0.88;
       } else {
-        this.speedMultiplier = 1.0;
+        this.selectedSpeedMultiplier = 1.0;
       }
+      this.speedMultiplier = this.difficultyProfile.playerSpeed * this.selectedSpeedMultiplier;
     });
 
     document.addEventListener('visibilitychange', () => {
@@ -474,10 +528,42 @@ class Game {
     }, 4000);
   }
 
+  setDifficulty(difficulty) {
+    if (!PACMAN_DIFFICULTIES[difficulty]) return;
+    this.difficulty = difficulty;
+    this.difficultyProfile = PACMAN_DIFFICULTIES[difficulty];
+    this.aiAggression = this.difficultyProfile.ghostAggression;
+    this.speedMultiplier = this.difficultyProfile.playerSpeed * this.selectedSpeedMultiplier;
+    this.resetGame();
+    this.showMemeToast(`MODO ${this.difficultyProfile.label}: ¡AL LÍO!`, '#ffe600');
+  }
+
+  createRoundChallenge() {
+    if (this.difficulty === 'facil') {
+      this.roundChallenge = { kind: 'pellets', goal: 25, progress: 0, reward: 350, label: 'APERITIVO: 25 BOLITAS', done: false };
+    } else if (this.difficulty === 'dificil') {
+      this.roundChallenge = { kind: 'ghosts', goal: 2, progress: 0, reward: 1200, label: 'RETO CUÑAO: 2 FANTASMAS', done: false };
+    } else {
+      this.roundChallenge = { kind: 'pellets', goal: 50, progress: 0, reward: 700, label: 'RETO DE BARRA: 50 BOLITAS', done: false };
+    }
+  }
+
+  advanceChallenge(kind, amount = 1) {
+    const challenge = this.roundChallenge;
+    if (!challenge || challenge.done || challenge.kind !== kind) return;
+    challenge.progress = Math.min(challenge.goal, challenge.progress + amount);
+    if (challenge.progress >= challenge.goal) {
+      challenge.done = true;
+      this.addScore(challenge.reward);
+      this.showMemeToast(`¡RETO HECHO! +${challenge.reward}`, '#70ffb0');
+      window.particleSystem.spawnScoreFloater(this.pacman.x, this.pacman.y - 18, `RETO +${challenge.reward}`, '#70ffb0');
+    }
+  }
+
   resetGame() {
     this.score = 0;
     this.level = 1;
-    this.lives = 3;
+    this.lives = this.difficultyProfile.lives;
     this.stats = {
       ghostsEaten: 0,
       pelletsEaten: 0,
@@ -485,6 +571,11 @@ class Game {
       maxCombo: 0
     };
     this.map.reset();
+    this.memeSurprise = null;
+    this.surpriseMilestones.clear();
+    this.pelletStreak = 0;
+    this.memeToast = null;
+    this.createRoundChallenge();
     this.pacman.reset();
     this.resetGhosts();
     this.updateHUD();
@@ -499,6 +590,8 @@ class Game {
     this.modeIndex = 0;
     this.modeTimer = 0;
     this.globalGhostMode = GHOST_MODES.SCATTER;
+    this.memeSurprise = null;
+    this.pelletStreak = 0;
     this.state = GAME_STATES.PLAYING;
     window.soundEngine.startSiren(false);
   }
@@ -518,7 +611,7 @@ class Game {
     const duration = FRIGHTENED_TIME_TABLE[tableIndex];
 
     if (duration > 0) {
-      this.ghosts.forEach(g => g.setFrightened(duration));
+      this.ghosts.forEach(g => g.setFrightened(duration * this.difficultyProfile.powerTime));
       this.wasFrightenedPlaying = true;
       window.soundEngine.startSiren(true);
     } else {
@@ -541,6 +634,7 @@ class Game {
         (tile.row + 0.5) * TILE_SIZE
       );
       this.checkFruitSpawn();
+      this.onPelletEaten();
     } else if (eaten === 3) {
       this.addScore(50);
       this.stats.pelletsEaten++;
@@ -553,11 +647,85 @@ class Game {
       );
       this.triggerEnergizer();
       this.checkFruitSpawn();
+      this.onPelletEaten();
     }
 
     if (this.map.pelletsRemaining <= 0) {
       this.levelCleared();
     }
+  }
+
+  onPelletEaten() {
+    this.pelletStreak++;
+    this.advanceChallenge('pellets');
+    const eatenCount = this.map.totalPellets - this.map.pelletsRemaining;
+
+    // Cada 30 bolitas sin perder una vida: premio de racha y un guiño arcade.
+    if (this.pelletStreak > 0 && this.pelletStreak % 30 === 0) {
+      const bonus = 150 + this.level * 25;
+      this.addScore(bonus);
+      this.showMemeToast(`${this.randomMeme('streak')} +${bonus}`, '#ffe600');
+      window.particleSystem.spawnScoreFloater(this.pacman.x, this.pacman.y - 12, `RACHA +${bonus}`, '#ffe600');
+    }
+
+    if ((eatenCount === 45 || eatenCount === 135) && !this.surpriseMilestones.has(eatenCount)) {
+      this.surpriseMilestones.add(eatenCount);
+      this.spawnMemeSurprise(eatenCount);
+    }
+  }
+
+  spawnMemeSurprise(seed) {
+    const spots = [
+      { col: 13, row: 17 }, { col: 6, row: 14 },
+      { col: 21, row: 14 }, { col: 13, row: 5 }
+    ];
+    const spot = spots[(this.level + seed) % spots.length];
+    const tortilla = (this.level + seed) % 2 === 0;
+    this.memeSurprise = {
+      x: (spot.col + 0.5) * TILE_SIZE,
+      y: (spot.row + 0.5) * TILE_SIZE,
+      icon: tortilla ? '🥔' : '🦑',
+      label: tortilla ? 'TORTILLA POWER' : 'BOCATA DE CALAMARES',
+      points: tortilla ? 750 : 1000,
+      effect: tortilla ? 'power' : 'life',
+      life: 8
+    };
+    this.showMemeToast(`¡APARECE ${this.memeSurprise.label}!`, tortilla ? '#ffd54a' : '#70e6ff');
+  }
+
+  updateMemeSurprise(dt) {
+    if (!this.memeSurprise) return;
+    this.memeSurprise.life -= dt;
+    if (this.memeSurprise.life <= 0) {
+      this.memeSurprise = null;
+      return;
+    }
+    const dist = Math.hypot(this.pacman.x - this.memeSurprise.x, this.pacman.y - this.memeSurprise.y);
+    if (dist >= 14) return;
+
+    const surprise = this.memeSurprise;
+    this.addScore(surprise.points);
+    window.soundEngine.playEatFruit();
+    window.particleSystem.spawnGhostBurst(surprise.x, surprise.y, surprise.effect === 'power' ? '#ffe600' : '#70e6ff');
+    window.particleSystem.spawnScoreFloater(surprise.x, surprise.y, `+${surprise.points}`, '#ffffff');
+    if (surprise.effect === 'power') {
+      this.triggerEnergizer();
+      this.showMemeToast('¡TORTILLA POWER ACTIVADO!', '#ffe600');
+    } else {
+      this.lives++;
+      this.updateHUD();
+      this.showMemeToast('¡VIDA EXTRA, QUÉ ARTE!', '#70e6ff');
+    }
+    this.memeSurprise = null;
+  }
+
+  showMemeToast(text, color = '#ffffff') {
+    this.memeToast = { text, color, life: 1.8, maxLife: 1.8 };
+  }
+
+  randomMeme(category) {
+    const lines = CUÑAO_MEMES[category] || CUÑAO_MEMES.streak;
+    return lines[Math.floor(Math.random() * lines.length)];
   }
 
   checkFruitSpawn() {
@@ -607,6 +775,7 @@ class Game {
           this.ghostComboMultiplier++;
           this.stats.ghostsEaten++;
           this.globalStats.ghostsTotal++;
+          this.advanceChallenge('ghosts');
           if (this.ghostComboMultiplier > this.stats.maxCombo) {
             this.stats.maxCombo = this.ghostComboMultiplier;
           }
@@ -618,6 +787,14 @@ class Game {
           window.particleSystem.spawnGhostBurst(ghost.x, ghost.y, ghost.color);
           window.particleSystem.spawnScoreFloater(ghost.x, ghost.y, `${points}`, '#00ffff');
           this.showQRBanner();
+          if (this.ghostComboMultiplier === 1) {
+            this.showMemeToast(this.randomMeme('ghost'), '#00ffff');
+          }
+          if (this.ghostComboMultiplier === 3) {
+            this.showMemeToast('¡TRIPLETE DE FANTASMAS!', '#ff8de8');
+          } else if (this.ghostComboMultiplier === 4) {
+            this.showMemeToast('¡CUATRO! MENUDO SHOW', '#ff8de8');
+          }
         } else if (ghost.mode === GHOST_MODES.CHASE || ghost.mode === GHOST_MODES.SCATTER) {
           this.pacmanDeath();
           break;
@@ -630,6 +807,8 @@ class Game {
     this.state = GAME_STATES.PACMAN_DYING;
     this.pacman.isDead = true;
     this.stateTimer = 1.8;
+    this.pelletStreak = 0;
+    this.memeSurprise = null;
     this.triggerScreenShake(8);
     window.soundEngine.playDeath();
   }
@@ -638,6 +817,7 @@ class Game {
     this.state = GAME_STATES.LEVEL_CLEAR;
     this.stateTimer = 2.5;
     this.flashMazeTimer = 0;
+    this.showMemeToast(`${this.randomMeme('level')} · NIVEL ${this.level}`, '#70ffb0');
     window.soundEngine.stopSiren();
   }
 
@@ -699,6 +879,10 @@ class Game {
     }
 
     window.particleSystem.update(dt);
+    if (this.memeToast) {
+      this.memeToast.life -= dt;
+      if (this.memeToast.life <= 0) this.memeToast = null;
+    }
 
     if (this.state === GAME_STATES.PLAYING) {
       if (!this.isAnyGhostFrightened()) {
@@ -715,7 +899,9 @@ class Game {
       const blinky = this.ghosts.find(g => g.name === 'Blinky');
       const eatenCount = this.map.totalPellets - this.map.pelletsRemaining;
 
-      this.pacman.update(this.speedMultiplier);
+      // La velocidad aumenta suavemente por nivel para que cada ronda exija más.
+      const levelSpeed = this.speedMultiplier * (1 + Math.min(this.level - 1, 10) * 0.055);
+      this.pacman.update(levelSpeed);
 
       this.ghosts.forEach(ghost => {
         ghost.update(
@@ -726,7 +912,8 @@ class Game {
           eatenCount,
           this.map.pelletsRemaining,
           this.level,
-          this.speedMultiplier
+          levelSpeed,
+          this.aiAggression
         );
       });
 
@@ -738,6 +925,8 @@ class Game {
           this.checkFruitCollision();
         }
       }
+
+      this.updateMemeSurprise(dt);
 
       this.checkPelletCollisions();
       this.checkGhostCollisions();
@@ -783,6 +972,9 @@ class Game {
           localStorage.setItem('pacman_global_stats', JSON.stringify(this.globalStats));
         }
         this.map.reset();
+        this.surpriseMilestones.clear();
+        this.pelletStreak = 0;
+        this.createRoundChallenge();
         this.resetRound();
         this.updateHUD();
       }
@@ -815,6 +1007,20 @@ class Game {
       this.ctx.restore();
     }
 
+    if (this.memeSurprise) {
+      const pulse = 1 + Math.sin(performance.now() / 140) * 0.12;
+      this.ctx.save();
+      this.ctx.translate(this.memeSurprise.x, this.memeSurprise.y);
+      this.ctx.scale(pulse, pulse);
+      this.ctx.font = '18px sans-serif';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.shadowColor = '#ffffff';
+      this.ctx.shadowBlur = window.pacmanLowPerf ? 0 : 10;
+      this.ctx.fillText(this.memeSurprise.icon, 0, 0);
+      this.ctx.restore();
+    }
+
     this.pacman.draw(this.ctx);
 
     if (this.state !== GAME_STATES.PACMAN_DYING && this.state !== GAME_STATES.LEVEL_CLEAR) {
@@ -822,6 +1028,35 @@ class Game {
     }
 
     window.particleSystem.draw(this.ctx);
+
+    if (this.memeToast) {
+      const toast = this.memeToast;
+      this.ctx.save();
+      this.ctx.globalAlpha = Math.min(1, toast.life / 0.35);
+      this.ctx.font = '9px "Press Start 2P", monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillStyle = toast.color;
+      this.ctx.shadowColor = '#000000';
+      this.ctx.shadowBlur = 5;
+      this.ctx.fillText(toast.text, this.canvas.width / 2, 28);
+      this.ctx.restore();
+    }
+
+    if (this.roundChallenge) {
+      const challenge = this.roundChallenge;
+      this.ctx.save();
+      this.ctx.font = '5px "Press Start 2P", monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillStyle = challenge.done ? '#70ffb0' : '#ffffff';
+      this.ctx.globalAlpha = 0.82;
+      const status = challenge.done
+        ? `RETO HECHO +${challenge.reward}`
+        : `${challenge.label} ${challenge.progress}/${challenge.goal}`;
+      this.ctx.fillText(status, this.canvas.width / 2, this.canvas.height - 9);
+      this.ctx.restore();
+    }
 
     this.ctx.restore();
   }

@@ -18,17 +18,19 @@ class ParticleSystem {
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
       const speed = 1.0 + Math.random() * 1.5;
-      this.particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        color,
-        size: 2,
-        alpha: 1,
-        life: 0.25,
-        maxLife: 0.25
-      });
+      if (window.pacmanLowPerf ? this.particles.length < 100 : true) {
+        this.particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color,
+          size: 2,
+          alpha: 1,
+          life: 0.25,
+          maxLife: 0.25
+        });
+      }
     }
   }
 
@@ -37,17 +39,19 @@ class ParticleSystem {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 1.5 + Math.random() * 2.5;
-      this.particles.push({
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        color,
-        size: 3 + Math.random() * 2,
-        alpha: 1,
-        life: 0.6,
-        maxLife: 0.6
-      });
+      if (window.pacmanLowPerf ? this.particles.length < 100 : true) {
+        this.particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color,
+          size: 3 + Math.random() * 2,
+          alpha: 1,
+          life: 0.6,
+          maxLife: 0.6
+        });
+      }
     }
   }
 
@@ -96,7 +100,7 @@ class ParticleSystem {
       ctx.globalAlpha = p.alpha;
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = 6;
+      ctx.shadowBlur = (window.pacmanLowPerf ? 0 : 6);
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
