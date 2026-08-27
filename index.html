@@ -26,24 +26,24 @@
 
     <div class="menu-grid">
       <!-- Opción 1: Modo Historia Super Ibon Bros -->
-      <div id="btn-select-mario" class="game-select-card mario-card" role="button" tabindex="0" aria-label="Jugar Modo Historia Super Ibon Bros">
+      <button id="btn-select-mario" class="game-select-card mario-card" type="button" aria-label="Jugar Modo Historia Super Ibon Bros">
         <div class="game-card-icon">🍄</div>
         <div class="game-card-info">
           <h2 class="game-card-title">Modo historia Super Ibon Bros</h2>
           <p class="game-card-desc">Plataformas, memes y recompensa final</p>
         </div>
         <div class="game-card-btn">JUGAR ▶</div>
-      </div>
+      </button>
 
       <!-- Opción 2: Pac-Man -->
-      <div id="btn-select-pacman" class="game-select-card pacman-card" role="button" tabindex="0" aria-label="Jugar Pac-Man Arcade">
+      <button id="btn-select-pacman" class="game-select-card pacman-card" type="button" aria-label="Jugar Pac-Man Arcade">
         <div class="game-card-icon">🟡</div>
         <div class="game-card-info">
           <h2 class="game-card-title">Pac-Man</h2>
           <p class="game-card-desc">Clásico Arcade Pro de fantasmas</p>
         </div>
         <div class="game-card-btn">JUGAR ▶</div>
-      </div>
+      </button>
     </div>
 
     <p class="menu-footer-hint">Toca una opción o usa el teclado para empezar</p>
@@ -456,7 +456,7 @@
         }
       }
 
-      document.querySelectorAll('.difficulty-btn').forEach((button) => {
+      document.querySelectorAll('#difficulty-modal .difficulty-btn').forEach((button) => {
         bindTap(button, () => startMarioWithDifficulty(button.dataset.difficulty));
       });
       bindTap(difficultyCancel, () => difficultyModal.classList.add('hidden'));
@@ -503,21 +503,35 @@
 
       function bindTap(el, handler) {
         if (!el) return;
-        let handledAt = 0;
-        const run = (e) => {
+        let lastPointerTap = 0;
+        const run = (e, isPointerTap = false) => {
           const now = Date.now();
-          if (now - handledAt < 450) return;
-          handledAt = now;
+          // Browsers fire a click after a touch.  Ignore only that synthetic
+          // click while keeping keyboard activation fully functional.
+          if (!isPointerTap && e && e.detail > 0 && now - lastPointerTap < 700) return;
+          if (isPointerTap) lastPointerTap = now;
           handler(e);
         };
-        el.addEventListener('click', run);
-        el.addEventListener('touchend', (e) => {
-          e.stopPropagation();
-          if (e.cancelable) e.preventDefault();
-          run(e);
-        }, { passive: false });
-        el.addEventListener('pointerup', (e) => {
-          if (e.pointerType === 'touch') run(e);
+        if (window.PointerEvent) {
+          el.addEventListener('pointerup', (e) => {
+            e.stopPropagation();
+            if (e.cancelable) e.preventDefault();
+            run(e, true);
+          }, { passive: false });
+        } else {
+          el.addEventListener('touchend', (e) => {
+            e.stopPropagation();
+            if (e.cancelable) e.preventDefault();
+            run(e, true);
+          }, { passive: false });
+        }
+        // Desktop click and keyboard accessibility fallback.
+        el.addEventListener('click', (e) => run(e, false));
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            run(e, false);
+          }
         });
       }
 
