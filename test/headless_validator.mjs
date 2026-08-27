@@ -311,11 +311,11 @@ async function runHeadlessValidator() {
     maxTouchPoints: 5
   });
 
-  // Navigate to index.html
+  // Navigate to index.html#mario
   console.log('===============================================================');
   console.log('🔷 SUITE 1: Boot, Subsystem Exports & 0 Network 404s (AC1)');
   console.log('===============================================================');
-  await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/index.html` });
+  await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/index.html#mario` });
 
   // Wait 1.5s for asset initialization and DOM ready
   await new Promise(r => setTimeout(r, 1500));
@@ -719,8 +719,8 @@ async function runHeadlessValidator() {
   assertCheck('Game state transitioned to "WIN"', victoryTest.state === 'WIN');
   assertCheck('Victory modal revealed after victory delay', victoryTest.modalRevealed === true && victoryTest.modalHiddenAfterWin === false);
   assertCheck('Reward Button is an anchor <a> tag', victoryTest.rewardTag === 'a');
-  assertCheck('Reward Button href starts with "https://www.youtube.com/watch?v="', 
-    victoryTest.rewardHref && victoryTest.rewardHref.startsWith('https://www.youtube.com/watch?v='));
+  assertCheck('Reward Button href is valid YouTube link', 
+    victoryTest.rewardHref && (victoryTest.rewardHref.startsWith('https://www.youtube.com/watch?v=') || victoryTest.rewardHref.startsWith('https://youtu.be/')));
   assertCheck('Reward Button target is exactly "_blank"', victoryTest.rewardTarget === '_blank');
   assertCheck('Reward Button rel includes "noopener" and "noreferrer"', 
     victoryTest.rewardRel && victoryTest.rewardRel.includes('noopener') && victoryTest.rewardRel.includes('noreferrer'));

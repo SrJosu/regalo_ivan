@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PAC-MAN ARCADE PRO - Google DeepMind Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="crt-enabled">
+  <div class="arcade-cabinet" id="arcade-cabinet">
+    <!-- Header / Marquee -->
+    <header class="arcade-header">
+      <div class="header-decor left-decor">
+        <span class="decor-dot yellow"></span>
+        <span class="decor-dot red"></span>
+      </div>
+      <h1 class="game-title">
+        <span class="p-letter">P</span><span class="a-letter">A</span><span class="c-letter">C</span><span class="hyphen">-</span><span class="m-letter">M</span><span class="a-letter">A</span><span class="n-letter">N</span>
+        <span class="pro-badge">PRO</span>
+      </h1>
+      <div class="header-decor right-decor">
+        <span class="decor-dot cyan"></span>
+        <span class="decor-dot pink"></span>
+      </div>
+    </header>
+
+    <!-- Score Board -->
+    <div class="scoreboard">
+      <div class="score-block">
+        <div class="score-label">1UP SCORE</div>
+        <div id="current-score" class="score-value">00</div>
+      </div>
+      <div class="score-block">
+        <div class="score-label">HIGH SCORE</div>
+        <div id="high-score" class="score-value">00</div>
+      </div>
+      <div class="score-block">
+        <div class="score-label">NIVEL</div>
+        <div id="level-display" class="score-value">1</div>
+      </div>
+    </div>
+
+    <!-- Main Game Container -->
+    <div class="screen-container" id="screen-container">
+      <div class="crt-overlay" id="crt-overlay"></div>
+      <canvas id="gameCanvas" width="448" height="496"></canvas>
+
+      <!-- Overlay Messages (Ready, Game Over, Stats) -->
+      <div id="game-overlay" class="overlay hidden">
+        <div class="overlay-card">
+          <h2 id="overlay-title" class="overlay-title">READY!</h2>
+          <p id="overlay-subtitle" class="overlay-subtitle">Presiona ESPACIO o TOCA para jugar</p>
+          <div id="gameover-stats" class="gameover-stats hidden">
+            <div class="stat-line"><span>Fantasmas Comidos:</span> <strong id="stat-ghosts">0</strong></div>
+            <div class="stat-line"><span>Pellets Recogidos:</span> <strong id="stat-pellets">0</strong></div>
+            <div class="stat-line"><span>Frutas Devoradas:</span> <strong id="stat-fruits">0</strong></div>
+            <div class="stat-line"><span>Máximo Combo:</span> <strong id="stat-combo">x0</strong></div>
+          </div>
+          <button id="overlay-btn" class="arcade-btn">JUGAR AHORA</button>
+        </div>
+      </div>
+
+      <!-- QR Banner -->
+      <div id="qr-banner" class="qr-banner hidden">
+        <img src="assets/qr.png" alt="QR Code">
+        <p>¡Escanéame!</p>
+      </div>
+
+      <!-- Pause Menu Modal -->
+      <div id="pause-modal" class="overlay hidden">
+        <div class="overlay-card">
+          <h2 class="overlay-title">PAUSA</h2>
+          <div class="pause-options">
+            <button id="resume-btn" class="arcade-btn">CONTINUAR</button>
+            <button id="stats-toggle-btn" class="arcade-btn secondary">ESTADÍSTICAS</button>
+            <button id="settings-toggle-btn" class="arcade-btn secondary">AJUSTES</button>
+            <button id="restart-btn" class="arcade-btn danger">REINICIAR</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Modal (Sugerencia Alex) -->
+      <div id="stats-modal" class="overlay hidden">
+        <div class="overlay-card settings-card">
+          <h2 class="overlay-title">RÉCORDS Y STATS</h2>
+          <div class="settings-grid">
+            <div class="stat-item-row">
+              <span>Partidas Jugadas:</span>
+              <strong id="global-stat-games">0</strong>
+            </div>
+            <div class="stat-item-row">
+              <span>Total Fantasmas:</span>
+              <strong id="global-stat-ghosts">0</strong>
+            </div>
+            <div class="stat-item-row">
+              <span>Total Pellets:</span>
+              <strong id="global-stat-pellets">0</strong>
+            </div>
+            <div class="stat-item-row">
+              <span>Nivel Más Alto:</span>
+              <strong id="global-stat-maxlevel">1</strong>
+            </div>
+          </div>
+          <button id="close-stats-btn" class="arcade-btn">VOLVER</button>
+        </div>
+      </div>
+
+      <!-- Settings Modal (Sugerencias Carla y Mateo) -->
+      <div id="settings-modal" class="overlay hidden">
+        <div class="overlay-card settings-card">
+          <h2 class="overlay-title">AJUSTES</h2>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label for="volume-slider">Volumen Sonido:</label>
+              <input type="range" id="volume-slider" min="0" max="100" value="70" class="arcade-slider">
+            </div>
+            <div class="setting-item">
+              <label for="theme-select">Tema Neón Muros:</label>
+              <select id="theme-select" class="arcade-select">
+                <option value="#2121ff" selected>Clásico Azul Eléctrico</option>
+                <option value="#ff007f">Cyberpunk Magenta</option>
+                <option value="#00ff66">Matrix Verde Neón</option>
+                <option value="#ffaa00">Oro Solar Arcade</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label for="speed-select">Modo de Juego:</label>
+              <select id="speed-select" class="arcade-select">
+                <option value="normal" selected>Normal (Arcade Clásico)</option>
+                <option value="turbo">⚡ Turbo Speedup (Hack 1981)</option>
+                <option value="easy">Fácil (Tranquilo)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label for="high-contrast-toggle">Alto Contraste (Daltónico):</label>
+              <input type="checkbox" id="high-contrast-toggle">
+            </div>
+            <div class="setting-item">
+              <label for="debug-ai-toggle">Ver Líneas de IA (Debug):</label>
+              <input type="checkbox" id="debug-ai-toggle">
+            </div>
+            <div class="setting-item">
+              <label for="crt-toggle">Efecto CRT Scanlines:</label>
+              <input type="checkbox" id="crt-toggle" checked>
+            </div>
+            <div class="setting-item">
+              <label for="dpad-toggle">Controles D-Pad Pantalla:</label>
+              <input type="checkbox" id="dpad-toggle" checked>
+            </div>
+          </div>
+          <button id="close-settings-btn" class="arcade-btn">GUARDAR Y SALIR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar (Lives & Fruits) -->
+    <div class="status-bar">
+      <div class="lives-container" id="lives-container"></div>
+      <div class="action-buttons">
+        <button id="btn-pause-quick" class="icon-btn" title="Pausar">⏸️</button>
+        <button id="btn-sound-quick" class="icon-btn" title="Silenciar">🔊</button>
+        <button id="btn-fullscreen-quick" class="icon-btn" title="Pantalla Completa">⛶</button>
+        <button id="btn-settings-quick" class="icon-btn" title="Ajustes">⚙️</button>
+      </div>
+      <div class="fruit-container" id="fruit-container"></div>
+    </div>
+
+    <!-- Virtual On-screen D-Pad -->
+    <div id="virtual-dpad" class="virtual-dpad">
+      <div class="dpad-row">
+        <button class="dpad-btn up" data-dir="UP" aria-label="Arriba">▲</button>
+      </div>
+      <div class="dpad-row middle">
+        <button class="dpad-btn left" data-dir="LEFT" aria-label="Izquierda">◀</button>
+        <div class="dpad-center">●</div>
+        <button class="dpad-btn right" data-dir="RIGHT" aria-label="Derecha">▶</button>
+      </div>
+      <div class="dpad-row">
+        <button class="dpad-btn down" data-dir="DOWN" aria-label="Abajo">▼</button>
+      </div>
+    </div>
+
+    <!-- Controls Legend -->
+    <footer class="arcade-footer">
+      <div class="controls-hint">
+        <span>🎮 <strong>Controles:</strong> Flechas / WASD / Swipe / D-Pad</span>
+        <span>⏸️ <strong>Pausa:</strong> P o ESC | ⛶ <strong>Full:</strong> F</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Audio Engine & Game Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/ghosts.js"></script>
+  <script src="js/pacman.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

@@ -301,7 +301,7 @@ runTest('T1.12', 'DOM Victory Modal & Exact Required Reward Button String + YouT
 
   const EXACT_BUTTON_TEXT = 'Terminado el juego. Pincha aquí para recibir la recompensa';
   assert(htmlContent.includes(EXACT_BUTTON_TEXT), `index.html contains exact required text: "${EXACT_BUTTON_TEXT}"`);
-  assert(htmlContent.includes('https://www.youtube.com/watch?v='), 'Reward button links to YouTube URL');
+  assert(htmlContent.includes('https://www.youtube.com/watch?v=') || htmlContent.includes('https://youtu.be/'), 'Reward button links to YouTube URL');
   assert(htmlContent.includes('target="_blank"'), 'Reward button opens in new tab (target="_blank")');
   assert(htmlContent.includes('rel="noopener noreferrer"'), 'Reward button has rel="noopener noreferrer"');
   assert(htmlContent.includes('id="btn-replay"'), 'index.html contains replay button #btn-replay');

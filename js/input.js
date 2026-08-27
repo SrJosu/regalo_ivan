@@ -146,6 +146,11 @@
 
   // --- 5. KEYBOARD EVENT HANDLERS ---
   function handleKeyDown(e) {
+    const gameCont = typeof document !== 'undefined' ? document.getElementById('game-container') : null;
+    if (gameCont && (gameCont.classList.contains('hidden') || gameCont.style.display === 'none')) {
+      return;
+    }
+
     const key = e.code || e.key;
     const action = CODE_TO_ACTION[key] || CODE_TO_ACTION[e.key];
 
@@ -160,6 +165,11 @@
   }
 
   function handleKeyUp(e) {
+    const gameCont = typeof document !== 'undefined' ? document.getElementById('game-container') : null;
+    if (gameCont && (gameCont.classList.contains('hidden') || gameCont.style.display === 'none')) {
+      return;
+    }
+
     const key = e.code || e.key;
     const action = CODE_TO_ACTION[key] || CODE_TO_ACTION[e.key];
 

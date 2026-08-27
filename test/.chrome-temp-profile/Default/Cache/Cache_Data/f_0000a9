@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#5c94fc">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Super Iván & Pac-Man Arcade Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/pacman.css">
+</head>
+<body class="crt-enabled">
+
+  <!-- =========================================================================
+       1. MAIN HUB MENU (MODO HISTORIA SUPER IBON BROS & PAC-MAN)
+       ========================================================================= -->
+  <div id="main-menu">
+    <header class="menu-cabinet-header">
+      <h1 class="menu-title">ARCADE RETRO HUB</h1>
+      <p class="menu-subtitle">¡Edición Especial Cumpleaños de Iván!</p>
+    </header>
+
+    <div class="menu-grid">
+      <!-- Opción 1: Modo Historia Super Ibon Bros -->
+      <div id="btn-select-mario" class="game-select-card mario-card" role="button" tabindex="0" aria-label="Jugar Modo Historia Super Ibon Bros">
+        <div class="game-card-icon">🍄</div>
+        <div class="game-card-info">
+          <h2 class="game-card-title">Modo historia Super Ibon Bros</h2>
+          <p class="game-card-desc">Plataformas, memes y recompensa final</p>
+        </div>
+        <div class="game-card-btn">JUGAR ▶</div>
+      </div>
+
+      <!-- Opción 2: Pac-Man -->
+      <div id="btn-select-pacman" class="game-select-card pacman-card" role="button" tabindex="0" aria-label="Jugar Pac-Man Arcade">
+        <div class="game-card-icon">🟡</div>
+        <div class="game-card-info">
+          <h2 class="game-card-title">Pac-Man</h2>
+          <p class="game-card-desc">Clásico Arcade Pro de fantasmas</p>
+        </div>
+        <div class="game-card-btn">JUGAR ▶</div>
+      </div>
+    </div>
+
+    <p class="menu-footer-hint">Toca una opción o usa el teclado para empezar</p>
+  </div>
+
+  <!-- Botón flotante para volver al Menú Principal en cualquier momento -->
+  <button id="btn-return-menu" class="btn-return-menu hidden" type="button" aria-label="Volver al Menú Principal">
+    ◀ MENÚ
+  </button>
+
+  <!-- =========================================================================
+       2. MODO HISTORIA SUPER IBON BROS (MARIO ENGINE)
+       ========================================================================= -->
+  <div id="game-container">
+    <!-- Retro Heads-Up Display (HUD) - Personalized for Iván -->
+    <header id="hud" aria-label="Game HUD">
+      <div class="hud-item hud-ivan">
+        <span class="hud-label">IVÁN</span>
+        <span id="hud-score" class="hud-value">000000</span>
+      </div>
+      <div class="hud-item hud-coins">
+        <span class="hud-label">🎂</span>
+        <span id="hud-coins" class="hud-value">&times;00</span>
+      </div>
+      <div class="hud-item hud-world">
+        <span class="hud-label">WORLD</span>
+        <span id="hud-world" class="hud-value">2026</span>
+      </div>
+      <div class="hud-item hud-time">
+        <span class="hud-label">TIME</span>
+        <span id="hud-time" class="hud-value">400</span>
+      </div>
+      <div class="hud-item hud-lives">
+        <span class="hud-label">LIVES</span>
+        <span id="hud-lives" class="hud-value">&times;3</span>
+      </div>
+    </header>
+
+    <!-- Native Canvas (360x800 logical coordinate space) -->
+    <canvas id="game-canvas" width="360" height="800" aria-label="Super Iván Game Canvas"></canvas>
+
+    <!-- Celebratory Birthday Victory Modal (DOM Overlay) -->
+    <div id="victory-modal" class="victory-overlay hidden" aria-label="Pantalla de Victoria de Iván" role="dialog" aria-modal="true">
+      <div class="victory-card">
+        <div class="victory-sparkles" aria-hidden="true">✨ 🎂 🎈 ✨</div>
+        <h1 class="victory-title">🎉 ¡FELICIDADES IVÁN! 🎉</h1>
+        <p class="victory-subtitle">¡Has completado el juego de tu cumpleaños!</p>
+        
+        <div class="victory-stats">
+          <div class="stat-card">
+            <span class="stat-title">PUNTOS</span>
+            <span id="win-score" class="stat-number">000000</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-title">TARTAS</span>
+            <span id="win-coins" class="stat-number">00</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-title">TIEMPO</span>
+            <span id="win-time" class="stat-number">000</span>
+          </div>
+        </div>
+
+        <!-- EXACT REQUIRED REWARD BUTTON (R3 Acceptance Criteria) -->
+        <a id="reward-btn"
+           class="reward-button"
+           href="https://youtu.be/sYDEll4pP7M"
+           target="_blank"
+           rel="noopener noreferrer"
+           aria-label="Abrir recompensa de cumpleaños en YouTube">Terminado el juego. Pincha aquí para recibir la recompensa</a>
+
+        <button id="btn-replay" class="replay-button" type="button" aria-label="Jugar de nuevo">
+          <span>🔄 Jugar de nuevo</span>
+        </button>
+
+        <p class="victory-hint">Pulsa el botón dorado para recibir tu recompensa especial 🎁</p>
+      </div>
+    </div>
+
+    <!-- Mobile-First Touch Controls Overlay -->
+    <div id="touch-controls" class="touch-overlay" aria-label="Controles táctiles">
+      <div class="dpad-container">
+        <button id="btn-left" class="touch-btn dpad-btn" aria-label="Mover a la izquierda">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button id="btn-right" class="touch-btn dpad-btn" aria-label="Mover a la derecha">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+      <div class="action-container">
+        <button id="btn-jump" class="touch-btn action-btn" aria-label="Saltar">
+          <span class="btn-text">A</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       3. PAC-MAN ARCADE CABINET
+       ========================================================================= -->
+  <div class="arcade-cabinet hidden" id="arcade-cabinet">
+    <!-- Header / Marquee -->
+    <header class="arcade-header">
+      <div class="header-decor left-decor">
+        <span class="decor-dot yellow"></span>
+        <span class="decor-dot red"></span>
+      </div>
+      <h1 class="game-title">
+        <span class="p-letter">P</span><span class="a-letter">A</span><span class="c-letter">C</span><span class="hyphen">-</span><span class="m-letter">M</span><span class="a-letter">A</span><span class="n-letter">N</span>
+        <span class="pro-badge">PRO</span>
+      </h1>
+      <div class="header-decor right-decor">
+        <span class="decor-dot cyan"></span>
+        <span class="decor-dot pink"></span>
+      </div>
+    </header>
+
+    <!-- Score Board -->
+    <div class="scoreboard">
+      <div class="score-block">
+        <div class="score-label">1UP SCORE</div>
+        <div id="current-score" class="score-value">00</div>
+      </div>
+      <div class="score-block">
+        <div class="score-label">HIGH SCORE</div>
+        <div id="high-score" class="score-value">00</div>
+      </div>
+      <div class="score-block">
+        <div class="score-label">NIVEL</div>
+        <div id="level-display" class="score-value">1</div>
+      </div>
+    </div>
+
+    <!-- Main Pacman Game Container -->
+    <div class="screen-container" id="screen-container">
+      <div class="crt-overlay" id="crt-overlay"></div>
+      <canvas id="gameCanvas" width="448" height="496"></canvas>
+
+      <!-- Overlay Messages (Ready, Game Over, Stats) -->
+      <div id="game-overlay" class="overlay hidden">
+        <div class="overlay-card">
+          <h2 id="overlay-title" class="overlay-title">READY!</h2>
+          <p id="overlay-subtitle" class="overlay-subtitle">Presiona ESPACIO o TOCA para jugar</p>
+          <div id="gameover-stats" class="gameover-stats hidden">
+            <div class="stat-line"><span>Fantasmas Comidos:</span> <strong id="stat-ghosts">0</strong></div>
+            <div class="stat-line"><span>Pellets Recogidos:</span> <strong id="stat-pellets">0</strong></div>
+            <div class="stat-line"><span>Frutas Devoradas:</span> <strong id="stat-fruits">0</strong></div>
+            <div class="stat-line"><span>Máximo Combo:</span> <strong id="stat-combo">x0</strong></div>
+          </div>
+          <button id="overlay-btn" class="arcade-btn">JUGAR AHORA</button>
+        </div>
+      </div>
+
+      <!-- QR Banner -->
+      <div id="qr-banner" class="qr-banner hidden">
+        <img src="assets/qr.png" alt="QR Code">
+        <p>¡Escanéame!</p>
+      </div>
+
+      <!-- Pause Menu Modal -->
+      <div id="pause-modal" class="overlay hidden">
+        <div class="overlay-card">
+          <h2 class="overlay-title">PAUSA</h2>
+          <div class="pause-options">
+            <button id="resume-btn" class="arcade-btn">CONTINUAR</button>
+            <button id="stats-toggle-btn" class="arcade-btn secondary">ESTADÍSTICAS</button>
+            <button id="settings-toggle-btn" class="arcade-btn secondary">AJUSTES</button>
+            <button id="restart-btn" class="arcade-btn danger">REINICIAR</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Modal -->
+      <div id="stats-modal" class="overlay hidden">
+        <div class="overlay-card settings-card">
+          <h2 class="overlay-title">RÉCORDS Y STATS</h2>
+          <div class="settings-grid">
+            <div class="stat-item-row">
+              <span>Partidas Jugadas:</span>
+              <strong id="global-stat-games">0</strong>
+            </div>
+            <div class="stat-item-row">
+              <span>Total Fantasmas:</span>
+              <strong id="global-stat-ghosts">0</strong>
+            </div>
+            <div class="stat-item-row">
+              <span>Total Pellets:</span>
+              <strong id="global-stat-pellets">0</strong>
+            </div>
+            <div class="stat-item-row">
+              <span>Nivel Más Alto:</span>
+              <strong id="global-stat-maxlevel">1</strong>
+            </div>
+          </div>
+          <button id="close-stats-btn" class="arcade-btn">VOLVER</button>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div id="settings-modal" class="overlay hidden">
+        <div class="overlay-card settings-card">
+          <h2 class="overlay-title">AJUSTES</h2>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label for="volume-slider">Volumen Sonido:</label>
+              <input type="range" id="volume-slider" min="0" max="100" value="70" class="arcade-slider">
+            </div>
+            <div class="setting-item">
+              <label for="theme-select">Tema Neón Muros:</label>
+              <select id="theme-select" class="arcade-select">
+                <option value="#2121ff" selected>Clásico Azul Eléctrico</option>
+                <option value="#ff007f">Cyberpunk Magenta</option>
+                <option value="#00ff66">Matrix Verde Neón</option>
+                <option value="#ffaa00">Oro Solar Arcade</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label for="speed-select">Modo de Juego:</label>
+              <select id="speed-select" class="arcade-select">
+                <option value="normal" selected>Normal (Arcade Clásico)</option>
+                <option value="turbo">⚡ Turbo Speedup (Hack 1981)</option>
+                <option value="easy">Fácil (Tranquilo)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label for="high-contrast-toggle">Alto Contraste (Daltónico):</label>
+              <input type="checkbox" id="high-contrast-toggle">
+            </div>
+            <div class="setting-item">
+              <label for="debug-ai-toggle">Ver Líneas de IA (Debug):</label>
+              <input type="checkbox" id="debug-ai-toggle">
+            </div>
+            <div class="setting-item">
+              <label for="crt-toggle">Efecto CRT Scanlines:</label>
+              <input type="checkbox" id="crt-toggle" checked>
+            </div>
+            <div class="setting-item">
+              <label for="dpad-toggle">Controles D-Pad Pantalla:</label>
+              <input type="checkbox" id="dpad-toggle" checked>
+            </div>
+          </div>
+          <button id="close-settings-btn" class="arcade-btn">GUARDAR Y SALIR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar (Lives & Fruits) -->
+    <div class="status-bar">
+      <div class="lives-container" id="lives-container"></div>
+      <div class="action-buttons">
+        <button id="btn-pause-quick" class="icon-btn" title="Pausar">⏸️</button>
+        <button id="btn-sound-quick" class="icon-btn" title="Silenciar">🔊</button>
+        <button id="btn-fullscreen-quick" class="icon-btn" title="Pantalla Completa">⛶</button>
+        <button id="btn-settings-quick" class="icon-btn" title="Ajustes">⚙️</button>
+      </div>
+      <div class="fruit-container" id="fruit-container"></div>
+    </div>
+
+    <!-- Virtual On-screen D-Pad -->
+    <div id="virtual-dpad" class="virtual-dpad">
+      <div class="dpad-row">
+        <button class="dpad-btn up" data-dir="UP" aria-label="Arriba">▲</button>
+      </div>
+      <div class="dpad-row middle">
+        <button class="dpad-btn left" data-dir="LEFT" aria-label="Izquierda">◀</button>
+        <div class="dpad-center">●</div>
+        <button class="dpad-btn right" data-dir="RIGHT" aria-label="Derecha">▶</button>
+      </div>
+      <div class="dpad-row">
+        <button class="dpad-btn down" data-dir="DOWN" aria-label="Abajo">▼</button>
+      </div>
+    </div>
+
+    <!-- Controls Legend -->
+    <footer class="arcade-footer">
+      <div class="controls-hint">
+        <span>🎮 <strong>Controles:</strong> Flechas / WASD / Swipe / D-Pad</span>
+        <span>⏸️ <strong>Pausa:</strong> P o ESC | ⛶ <strong>Full:</strong> F</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Core Scripts for Mario Platformer in Dependency Order -->
+  <script src="js/assets.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/level.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/game.js"></script>
+
+  <!-- Core Scripts for Pac-Man Arcade in Dependency Order -->
+  <script src="js/pacman/audio.js"></script>
+  <script src="js/pacman/particles.js"></script>
+  <script src="js/pacman/map.js"></script>
+  <script src="js/pacman/ghosts.js"></script>
+  <script src="js/pacman/pacman.js"></script>
+  <script src="js/pacman/game.js"></script>
+
+  <!-- Arcade Hub Controller Script -->
+  <script>
+    (function () {
+      'use strict';
+
+      const mainMenu = document.getElementById('main-menu');
+      const marioContainer = document.getElementById('game-container');
+      const pacmanCabinet = document.getElementById('arcade-cabinet');
+      const btnReturnMenu = document.getElementById('btn-return-menu');
+
+      const btnSelectMario = document.getElementById('btn-select-mario');
+      const btnSelectPacman = document.getElementById('btn-select-pacman');
+
+      function showMenu() {
+        mainMenu.classList.remove('hidden');
+        marioContainer.classList.add('hidden');
+        pacmanCabinet.classList.add('hidden');
+        btnReturnMenu.classList.add('hidden');
+
+        // Stop Pacman loop & sounds if running
+        if (window.gameInstance && window.gameInstance.stop) {
+          window.gameInstance.stop();
+        }
+      }
+
+      function launchMario() {
+        mainMenu.classList.add('hidden');
+        marioContainer.classList.remove('hidden');
+        pacmanCabinet.classList.add('hidden');
+        btnReturnMenu.classList.remove('hidden');
+
+        // Stop pacman sound
+        if (window.soundEngine && window.soundEngine.stopSiren) {
+          window.soundEngine.stopSiren();
+        }
+
+        // Initialize or resume Mario game
+        if (window.Game && window.Game.init) {
+          if (!window.Game.isRunning) {
+            window.Game.init();
+          }
+        }
+      }
+
+      function launchPacman() {
+        mainMenu.classList.add('hidden');
+        marioContainer.classList.add('hidden');
+        pacmanCabinet.classList.remove('hidden');
+        btnReturnMenu.classList.remove('hidden');
+
+        // Initialize or resume Pacman
+        if (window.initPacmanGame) {
+          window.initPacmanGame();
+        }
+      }
+
+      if (btnSelectMario) {
+        btnSelectMario.addEventListener('click', launchMario);
+      }
+
+      if (btnSelectPacman) {
+        btnSelectPacman.addEventListener('click', launchPacman);
+      }
+
+      if (btnReturnMenu) {
+        btnReturnMenu.addEventListener('click', showMenu);
+      }
+
+      function checkRoute() {
+        const hash = window.location.hash;
+        const search = window.location.search;
+        if (hash === '#mario' || search.includes('game=mario')) {
+          launchMario();
+        } else if (hash === '#pacman' || search.includes('game=pacman')) {
+          launchPacman();
+        } else {
+          showMenu();
+        }
+      }
+
+      window.addEventListener('hashchange', checkRoute);
+      // Run routing immediately
+      checkRoute();
+
+      // Export switcher
+      window.ArcadeHub = {
+        showMenu: showMenu,
+        launchMario: launchMario,
+        launchPacman: launchPacman
+      };
+    })();
+  </script>
+</body>
+</html>
+
