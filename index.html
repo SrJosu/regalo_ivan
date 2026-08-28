@@ -542,14 +542,20 @@
           handler(e);
         };
 
-        // Pointer Events (Mobile Safari, Chrome, Edge)
-        if (window.PointerEvent) {
+        // Pointer Events are the canonical path on current mobile browsers.
+        // Do not also bind touch events there: iOS/Android can emit both event
+        // families for one tap, which made the menu occasionally discard it.
+        const supportsPointerEvents = Boolean(window.PointerEvent);
+        if (supportsPointerEvents) {
           el.addEventListener('pointerdown', (e) => {
             if (e.pointerType === 'touch' || e.pointerType === 'pen') {
               touchStartX = e.clientX;
               touchStartY = e.clientY;
               isPointerActive = true;
               activePointerId = e.pointerId;
+              if (el.setPointerCapture) {
+                try { el.setPointerCapture(e.pointerId); } catch (_) {}
+              }
             }
           }, { passive: true });
 
@@ -573,8 +579,8 @@
           }, { passive: true });
         }
 
-        // Touch Events fallback / reinforcement
-        el.addEventListener('touchstart', (e) => {
+        // Fallback exclusively for browsers without Pointer Events.
+        if (!supportsPointerEvents) el.addEventListener('touchstart', (e) => {
           const t = (e.changedTouches && e.changedTouches.length > 0)
             ? e.changedTouches[0]
             : (e.touches && e.touches.length > 0 ? e.touches[0] : null);
@@ -585,7 +591,7 @@
           }
         }, { passive: true });
 
-        el.addEventListener('touchend', (e) => {
+        if (!supportsPointerEvents) el.addEventListener('touchend', (e) => {
           if (Date.now() - globalLastTouchOrPointerTime < 300) {
             if (e.cancelable) e.preventDefault();
             return;
@@ -615,7 +621,7 @@
           }
         }, { passive: false });
 
-        el.addEventListener('touchcancel', () => {
+        if (!supportsPointerEvents) el.addEventListener('touchcancel', () => {
           isPointerActive = false;
           touchIdentifier = null;
         }, { passive: true });
@@ -676,4 +682,3 @@
   </script>
 </body>
 </html>
-
