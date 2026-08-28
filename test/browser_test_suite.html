@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Browser Test Suite - Touch Navigation</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/pacman.css">
+</head>
+<body>
+  <div id="test-output" style="white-space: pre; font-family: monospace; padding: 20px;"></div>
+
+  <!-- Include the actual index.html body structure for live testing -->
+  <div id="app-root"></div>
+
+  <script src="../js/assets.js"></script>
+  <script src="../js/physics.js"></script>
+  <script src="../js/input.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/level.js"></script>
+  <script src="../js/entities.js"></script>
+  <script src="../js/game.js"></script>
+
+  <script src="../js/pacman/audio.js"></script>
+  <script src="../js/pacman/particles.js"></script>
+  <script src="../js/pacman/map.js"></script>
+  <script src="../js/pacman/ghosts.js"></script>
+  <script src="../js/pacman/pacman.js"></script>
+  <script src="../js/pacman/game.js"></script>
+
+  <script>
+    const outputEl = document.getElementById('test-output');
+    const logs = [];
+
+    function log(msg) {
+      logs.push(msg);
+      console.log(msg);
+      outputEl.textContent = logs.join('\n');
+    }
+
+    let totalTests = 0;
+    let passedTests = 0;
+    let failedTests = 0;
+
+    function assert(condition, message) {
+      if (!condition) {
+        throw new Error(message || 'Assertion failed');
+      }
+    }
+
+    function assertEqual(actual, expected, message) {
+      if (actual !== expected) {
+        throw new Error(`${message || 'Assertion failed'}: expected [${expected}] but got [${actual}]`);
+      }
+    }
+
+    async function runTest(name, fn) {
+      totalTests++;
+      try {
+        await fn();
+        passedTests++;
+        log(`  ✓ [PASS] ${name}`);
+      } catch (err) {
+        failedTests++;
+        log(`  ❌ [FAIL] ${name}\n     ${err.stack || err.message}`);
+      }
+    }
+
+    // Helper to simulate touch tap
+    function simulateTouchTap(element, x = 100, y = 100, dx = 0, dy = 0) {
+      const pdown = new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 1,
+        clientX: x,
+        clientY: y
+      });
+      element.dispatchEvent(pdown);
+
+      const tstart = new CustomEvent('touchstart', {
+        bubbles: true,
+        cancelable: true
+      });
+      tstart.touches = [{ clientX: x, clientY: y, identifier: 1 }];
+      tstart.changedTouches = [{ clientX: x, clientY: y, identifier: 1 }];
+      element.dispatchEvent(tstart);
+
+      const pup = new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 1,
+        clientX: x + dx,
+        clientY: y + dy
+      });
+      element.dispatchEvent(pup);
+
+      const tend = new CustomEvent('touchend', {
+        bubbles: true,
+        cancelable: true
+      });
+      tend.touches = [];
+      tend.changedTouches = [{ clientX: x + dx, clientY: y + dy, identifier: 1 }];
+      element.dispatchEvent(tend);
+    }
+
+    // Helper to simulate multi-touch tap (e.g. thumb resting on screen at 50,50 while tapping with index at 200,200)
+    function simulateMultiTouchTap(element, x = 200, y = 200, dx = 0, dy = 0) {
+      const pdown = new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 2,
+        clientX: x,
+        clientY: y
+      });
+      element.dispatchEvent(pdown);
+
+      const tstart = new CustomEvent('touchstart', {
+        bubbles: true,
+        cancelable: true
+      });
+      // touches has 2 items: finger 1 resting elsewhere, finger 2 touching element
+      tstart.touches = [
+        { clientX: 50, clientY: 50, identifier: 1 },
+        { clientX: x, clientY: y, identifier: 2 }
+      ];
+      tstart.changedTouches = [{ clientX: x, clientY: y, identifier: 2 }];
+      element.dispatchEvent(tstart);
+
+      const pup = new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 2,
+        clientX: x + dx,
+        clientY: y + dy
+      });
+      element.dispatchEvent(pup);
+
+      const tend = new CustomEvent('touchend', {
+        bubbles: true,
+        cancelable: true
+      });
+      tend.touches = [{ clientX: 50, clientY: 50, identifier: 1 }];
+      tend.changedTouches = [{ clientX: x + dx, clientY: y + dy, identifier: 2 }];
+      element.dispatchEvent(tend);
+    }
+
+    window.addEventListener('load', async () => {
+      log('===============================================================');
+      log('🧪 EXECUTING CHROMIUM/EDGE HEADLESS BROWSER TEST SUITE');
+      log('===============================================================\n');
+
+      // Fetch index.html and inject into app-root
+      const response = await fetch('../index.html');
+      const htmlText = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, 'text/html');
+
+      const appRoot = document.getElementById('app-root');
+      // Copy body content
+      appRoot.innerHTML = doc.body.innerHTML;
+
+      // Extract and execute the hub script
+      const scripts = doc.querySelectorAll('script');
+      let hubScriptContent = '';
+      for (const s of scripts) {
+        if (s.textContent.includes('ArcadeHub')) {
+          hubScriptContent = s.textContent;
+          break;
+        }
+      }
+
+      if (hubScriptContent) {
+        const runHub = new Function(hubScriptContent);
+        runHub();
+      }
+
+      const mainMenu = document.getElementById('main-menu');
+      const btnSelectMario = document.getElementById('btn-select-mario');
+      const btnSelectPacman = document.getElementById('btn-select-pacman');
+      const difficultyModal = document.getElementById('difficulty-modal');
+      const pacmanDifficultyModal = document.getElementById('pacman-difficulty-modal');
+      const difficultyCancel = document.getElementById('difficulty-cancel');
+      const pacmanDifficultyCancel = document.getElementById('pacman-difficulty-cancel');
+      const btnReturnMenu = document.getElementById('btn-return-menu');
+      const marioContainer = document.getElementById('game-container');
+      const pacmanCabinet = document.getElementById('arcade-cabinet');
+
+      const marioButtons = document.querySelectorAll('#difficulty-modal .difficulty-btn');
+      const pacmanButtons = document.querySelectorAll('.pacman-difficulty-btn');
+
+      // TEST 1: Mario Card Touch
+      await runTest('T1: Touch tap on Mario card opens Mario difficulty modal', () => {
+        window.ArcadeHub.showMenu();
+        assertEqual(mainMenu.classList.contains('hidden'), false, 'Main menu should be visible');
+        assertEqual(difficultyModal.classList.contains('hidden'), true, 'Mario modal should be hidden');
+
+        simulateTouchTap(btnSelectMario, 100, 100);
+
+        assertEqual(difficultyModal.classList.contains('hidden'), false, 'Mario modal should now be open');
+        assertEqual(pacmanDifficultyModal.classList.contains('hidden'), true, 'Pacman modal should remain hidden');
+        assertEqual(marioContainer.classList.contains('hidden'), true, 'Mario game should not start yet');
+      });
+
+      // TEST 2: Mario Difficulty Selection (Easy)
+      await runTest('T2: Touch tap on Mario Easy difficulty starts Mario game', () => {
+        const easyBtn = document.querySelector('#difficulty-modal .difficulty-btn.easy');
+        simulateTouchTap(easyBtn, 150, 150);
+
+        assertEqual(difficultyModal.classList.contains('hidden'), true, 'Modal should close');
+        assertEqual(mainMenu.classList.contains('hidden'), true, 'Main menu should be hidden');
+        assertEqual(marioContainer.classList.contains('hidden'), false, 'Mario game container should be visible');
+        assertEqual(btnReturnMenu.classList.contains('hidden'), false, 'Return menu button should be visible');
+        assertEqual(window.Game.difficulty, 'facil', 'Game difficulty should be facil');
+        assertEqual(window.Game.isRunning, true, 'Mario game should be running');
+      });
+
+      // TEST 3: Return to Menu from Mario
+      await runTest('T3: Touch tap on Return Menu button returns to main menu and stops Mario', () => {
+        simulateTouchTap(btnReturnMenu, 20, 20);
+
+        assertEqual(mainMenu.classList.contains('hidden'), false, 'Main menu should be visible');
+        assertEqual(marioContainer.classList.contains('hidden'), true, 'Mario game container should be hidden');
+        assertEqual(btnReturnMenu.classList.contains('hidden'), true, 'Return button should be hidden');
+        assertEqual(window.Game.isRunning, false, 'Mario game should be stopped');
+      });
+
+      // TEST 4: Pac-Man Card Touch
+      await runTest('T4: Touch tap on Pac-Man card opens Pac-Man difficulty modal', () => {
+        window.ArcadeHub.showMenu();
+        simulateTouchTap(btnSelectPacman, 100, 200);
+
+        assertEqual(pacmanDifficultyModal.classList.contains('hidden'), false, 'Pacman modal should be open');
+        assertEqual(difficultyModal.classList.contains('hidden'), true, 'Mario modal should be hidden');
+      });
+
+      // TEST 5: Pac-Man Difficulty Selection (Cuñao Pro / Dificil)
+      await runTest('T5: Touch tap on Pac-Man Hard difficulty starts Pac-Man game', () => {
+        const hardBtn = document.querySelector('.pacman-difficulty-btn.hard');
+        simulateTouchTap(hardBtn, 150, 250);
+
+        assertEqual(pacmanDifficultyModal.classList.contains('hidden'), true, 'Pacman modal should close');
+        assertEqual(mainMenu.classList.contains('hidden'), true, 'Main menu should be hidden');
+        assertEqual(pacmanCabinet.classList.contains('hidden'), false, 'Pacman cabinet should be visible');
+        assertEqual(btnReturnMenu.classList.contains('hidden'), false, 'Return menu button should be visible');
+        assertEqual(window.gameInstance.difficulty, 'dificil', 'Pacman difficulty should be dificil');
+        assertEqual(window.gameInstance.isRunning, true, 'Pacman game should be running');
+      });
+
+      // TEST 6: Return to Menu from Pac-Man
+      await runTest('T6: Touch tap on Return Menu button returns to main menu and stops Pac-Man', () => {
+        simulateTouchTap(btnReturnMenu, 20, 20);
+
+        assertEqual(mainMenu.classList.contains('hidden'), false, 'Main menu should be visible');
+        assertEqual(pacmanCabinet.classList.contains('hidden'), true, 'Pacman cabinet should be hidden');
+        assertEqual(btnReturnMenu.classList.contains('hidden'), true, 'Return button should be hidden');
+        assertEqual(window.gameInstance.isRunning, false, 'Pacman game should be stopped');
+      });
+
+      // TEST 7: VOLVER in Mario modal
+      await runTest('T7: Touch tap on VOLVER in Mario modal closes modal', () => {
+        window.ArcadeHub.showMenu();
+        simulateTouchTap(btnSelectMario, 100, 100);
+        assertEqual(difficultyModal.classList.contains('hidden'), false);
+
+        simulateTouchTap(difficultyCancel, 100, 300);
+        assertEqual(difficultyModal.classList.contains('hidden'), true, 'Mario modal should be closed');
+        assertEqual(mainMenu.classList.contains('hidden'), false, 'Main menu should remain visible');
+      });
+
+      // TEST 8: VOLVER in Pac-Man modal
+      await runTest('T8: Touch tap on VOLVER in Pac-Man modal closes modal', () => {
+        window.ArcadeHub.showMenu();
+        simulateTouchTap(btnSelectPacman, 100, 200);
+        assertEqual(pacmanDifficultyModal.classList.contains('hidden'), false);
+
+        simulateTouchTap(pacmanDifficultyCancel, 100, 300);
+        assertEqual(pacmanDifficultyModal.classList.contains('hidden'), true, 'Pacman modal should be closed');
+        assertEqual(mainMenu.classList.contains('hidden'), false, 'Main menu should remain visible');
+      });
+
+      // TEST 9: Multi-touch tap test (Fix for finger 1 resting on screen while finger 2 taps)
+      await runTest('T9: Multi-touch tap with secondary finger opens modal accurately', () => {
+        window.ArcadeHub.showMenu();
+        simulateMultiTouchTap(btnSelectMario, 120, 120);
+
+        assertEqual(difficultyModal.classList.contains('hidden'), false, 'Multi-touch tap on Mario should open modal');
+        simulateTouchTap(difficultyCancel, 100, 300);
+        assertEqual(difficultyModal.classList.contains('hidden'), true);
+      });
+
+      // TEST 10: Touch Jitter (<25px opens modal, >=25px drag is ignored)
+      await runTest('T10: Touch jitter (<25px opens modal, >=25px drag is ignored)', () => {
+        window.ArcadeHub.showMenu();
+        // Jitter of 10px, 15px
+        simulateTouchTap(btnSelectPacman, 100, 200, 10, 15);
+        assertEqual(pacmanDifficultyModal.classList.contains('hidden'), false, 'Jitter within 25px should open modal');
+
+        // Close
+        simulateTouchTap(pacmanDifficultyCancel, 100, 300);
+        assertEqual(pacmanDifficultyModal.classList.contains('hidden'), true);
+
+        // Drag 45px
+        simulateTouchTap(btnSelectPacman, 100, 200, 45, 0);
+        assertEqual(pacmanDifficultyModal.classList.contains('hidden'), true, 'Drag >= 25px should NOT open modal');
+      });
+
+      // TEST 11: Ghost click suppression
+      await runTest('T11: Ghost click suppression prevents synthetic bleed-through', () => {
+        window.ArcadeHub.showMenu();
+        simulateTouchTap(btnSelectMario, 100, 100);
+        assertEqual(difficultyModal.classList.contains('hidden'), false);
+
+        // Delayed synthetic click at modal button location 50ms later
+        const normalBtn = document.querySelector('#difficulty-modal .difficulty-btn.normal');
+        normalBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+        // Game should NOT have started
+        assertEqual(marioContainer.classList.contains('hidden'), true, 'Ghost click must not trigger difficulty selection');
+        assertEqual(difficultyModal.classList.contains('hidden'), false, 'Modal should stay open');
+
+        // Close
+        simulateTouchTap(difficultyCancel, 100, 300);
+      });
+
+      // TEST 12: Rapid alternation stress test
+      await runTest('T12: Rapid alternation between Mario and Pac-Man modals', () => {
+        for (let i = 0; i < 20; i++) {
+          window.ArcadeHub.showMenu();
+          simulateTouchTap(btnSelectMario, 100, 100);
+          assertEqual(difficultyModal.classList.contains('hidden'), false);
+          assertEqual(pacmanDifficultyModal.classList.contains('hidden'), true);
+
+          simulateTouchTap(btnSelectPacman, 100, 200);
+          assertEqual(pacmanDifficultyModal.classList.contains('hidden'), false);
+          assertEqual(difficultyModal.classList.contains('hidden'), true);
+        }
+        window.ArcadeHub.showMenu();
+      });
+
+      // TEST 13: Keyboard Accessibility
+      await runTest('T13: Keyboard accessibility (Enter / Space)', () => {
+        window.ArcadeHub.showMenu();
+        btnSelectMario.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+        assertEqual(difficultyModal.classList.contains('hidden'), false, 'Enter key should open Mario modal');
+
+        difficultyCancel.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+        assertEqual(difficultyModal.classList.contains('hidden'), true, 'Space key should close modal');
+      });
+
+      log('\n===============================================================');
+      log(`📊 SUMMARY: ${passedTests}/${totalTests} Tests Passed (${failedTests} Failures)`);
+      log('===============================================================');
+
+      // Signal completion
+      const finishFlag = document.createElement('div');
+      finishFlag.id = 'suite-finished';
+      finishFlag.dataset.passed = String(passedTests);
+      finishFlag.dataset.total = String(totalTests);
+      finishFlag.dataset.failed = String(failedTests);
+      document.body.appendChild(finishFlag);
+    });
+  </script>
+</body>
+</html>

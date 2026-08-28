@@ -67,7 +67,31 @@ El usuario ha pedido explicitamente que un "creativo/publicista" aporte ideas. A
 - [ ] El juego sigue funcionando correctamente sin errores de consola en un navegador, y los controles táctiles/teclado no se han roto con la actualización.
 - [ ] Los recursos externos (imágenes/audios) se cargan correctamente, manejando posibles errores de carga.
 
-### Verificación Agente-como-Juez
-- [ ] Un agente auditor verifica visual y auditivamente que hay elementos "meme" claramente identificables.
-- [ ] Un agente auditor verifica que al ganar el juego aparece el botón con el texto exacto «Terminado el juego. Pincha aquí para recibir la recompensa» y que contiene un enlace `href` hacia youtube.
+## Follow-up — 2026-08-28T19:04:07+02:00
+
+This is a single self-contained fix; keep it small and focused.
+
+Corregir el bug en dispositivos móviles (smartphones) donde la pulsación táctil sobre los botones o tarjetas de juego ("JUGAR ▶", Super Ibon Bros / Pac-Man) en el menú principal no abre el selector de nivel/dificultad ni inicia la partida.
+
+Working directory: c:/Users/cinth/Downloads/REGALO IVAN/regalo_ivan-master
+Integrity mode: development
+
+## Requirements
+
+### R1. Apertura táctil del selector de dificultad en móviles
+Asegurar que al tocar las tarjetas o botones de selección de juego en el menú principal (`#btn-select-mario`, `#btn-select-pacman`) en cualquier smartphone o navegador táctil (iOS Safari, Android Chrome), se abra de forma inmediata y confiable el selector de nivel/dificultad correspondiente (`#difficulty-modal`, `#pacman-difficulty-modal`).
+
+### R2. Inicio de juego tras la selección de nivel
+Asegurar que al pulsar táctilmente sobre cualquiera de los niveles de dificultad (Fácil, Normal, Difícil / Tranqui, De barra, Cuñao Pro), el modal se cierre correctamente y el juego seleccionado (Super Ibon Bros o Pac-Man) arranque de inmediato con el contexto de audio habilitado.
+
+### R3. Compatibilidad cruzada y navegación fluida
+Mantener la compatibilidad y funcionalidad tanto en pantallas táctiles como con ratón y teclado, asegurando que los botones de "VOLVER" en los modales y el botón flotante "◀ MENÚ" respondan al toque sin bloqueos de eventos ni eventos fantasma/duplicados.
+
+## Acceptance Criteria
+
+### Touch Event Handling & Menu Navigation
+- [ ] Al pulsar táctilmente sobre "Modo historia Super Ibon Bros" o "Pac-Man" en el menú principal, se abre su respectivo modal de nivel/dificultad sin requerir doble toque o fallar silenciosamente.
+- [ ] Al pulsar táctilmente cualquier opción de dificultad en el modal, se inicia la partida del minijuego correspondiente.
+- [ ] El botón "VOLVER" en ambos modales y el botón "◀ MENÚ" durante la partida regresan al estado anterior al ser tocados en un smartphone.
+- [ ] Las interacciones funcionan fluidamente sin interferencias entre eventos de puntero (`pointerup`), táctiles (`touchend`) y clics estándar.
 
