@@ -509,133 +509,64 @@
       }
 
       /**
-       * Bulletproof tap binder for mobile touchscreens, mouse, and keyboard.
-       * - Handles Touch and Pointer events with touch jitter tolerance.
-       * - Resolves multi-touch by tracking specific pointer/touch identifiers.
-       * - Suppresses delayed synthetic click events after touch to prevent fast-through modal clicks.
-       * - Supports desktop mouse clicks and accessibility keyboards (Enter/Space).
-       * - Automatically unlocks audio context on interaction.
+       * Bulletproof tap binder for mobile touchscreens (Android & iOS), mouse, and keyboard.
+       * - Supports instant touchend with drag/scroll tolerance.
+       * - Supports native click for desktop mouse, accessibility, and Android fallback.
+       * - Debounces duplicate events to eliminate ghost clicks across view transitions.
+       * - Unlocks Web Audio API on the user gesture.
        */
       function bindTap(el, handler) {
         if (!el) return;
 
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let isPointerActive = false;
-        let activePointerId = null;
-        let touchIdentifier = null;
+        let startX = 0;
+        let startY = 0;
+        let isTouchMoved = false;
+        let lastTriggerTime = 0;
 
-        const trigger = (e, isDirectTouchOrPointer) => {
+        function execute(e) {
           const now = Date.now();
-
-          // Suppress delayed synthetic clicks following a touch anywhere on the UI
-          if (!isDirectTouchOrPointer && e && e.type === 'click' && (now - globalLastTouchOrPointerTime < 450)) {
-            if (e.cancelable) e.preventDefault();
-            return;
-          }
-
-          if (isDirectTouchOrPointer) {
-            globalLastTouchOrPointerTime = now;
-          }
+          if (now - lastTriggerTime < 350) return;
+          lastTriggerTime = now;
 
           unlockAudioContexts();
           handler(e);
-        };
-
-        // Pointer Events are the canonical path on current mobile browsers.
-        // Do not also bind touch events there: iOS/Android can emit both event
-        // families for one tap, which made the menu occasionally discard it.
-        const supportsPointerEvents = Boolean(window.PointerEvent);
-        if (supportsPointerEvents) {
-          el.addEventListener('pointerdown', (e) => {
-            if (e.pointerType === 'touch' || e.pointerType === 'pen') {
-              touchStartX = e.clientX;
-              touchStartY = e.clientY;
-              isPointerActive = true;
-              activePointerId = e.pointerId;
-              if (el.setPointerCapture) {
-                try { el.setPointerCapture(e.pointerId); } catch (_) {}
-              }
-            }
-          }, { passive: true });
-
-          el.addEventListener('pointerup', (e) => {
-            if (isPointerActive && (activePointerId === null || e.pointerId === activePointerId || e.pointerType === 'touch' || e.pointerType === 'pen')) {
-              const dx = Math.abs(e.clientX - touchStartX);
-              const dy = Math.abs(e.clientY - touchStartY);
-              isPointerActive = false;
-              activePointerId = null;
-              if (dx < 25 && dy < 25) {
-                if (e.cancelable) e.preventDefault();
-                e.stopPropagation();
-                trigger(e, true);
-              }
-            }
-          }, { passive: false });
-
-          el.addEventListener('pointercancel', () => {
-            isPointerActive = false;
-            activePointerId = null;
-          }, { passive: true });
         }
 
-        // Fallback exclusively for browsers without Pointer Events.
-        if (!supportsPointerEvents) el.addEventListener('touchstart', (e) => {
-          const t = (e.changedTouches && e.changedTouches.length > 0)
-            ? e.changedTouches[0]
-            : (e.touches && e.touches.length > 0 ? e.touches[0] : null);
-          if (t) {
-            touchStartX = t.clientX;
-            touchStartY = t.clientY;
-            touchIdentifier = t.identifier;
+        el.addEventListener('touchstart', (e) => {
+          unlockAudioContexts();
+          if (e.touches && e.touches.length > 0) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            isTouchMoved = false;
           }
         }, { passive: true });
 
-        if (!supportsPointerEvents) el.addEventListener('touchend', (e) => {
-          if (Date.now() - globalLastTouchOrPointerTime < 300) {
-            if (e.cancelable) e.preventDefault();
-            return;
-          }
-          let matchTouch = null;
-          if (e.changedTouches && e.changedTouches.length > 0) {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-              if (touchIdentifier === null || e.changedTouches[i].identifier === touchIdentifier) {
-                matchTouch = e.changedTouches[i];
-                break;
-              }
+        el.addEventListener('touchmove', (e) => {
+          if (e.touches && e.touches.length > 0) {
+            const dx = Math.abs(e.touches[0].clientX - startX);
+            const dy = Math.abs(e.touches[0].clientY - startY);
+            if (dx > 14 || dy > 14) {
+              isTouchMoved = true;
             }
-            if (!matchTouch) matchTouch = e.changedTouches[0];
           }
-          if (matchTouch) {
-            const dx = Math.abs(matchTouch.clientX - touchStartX);
-            const dy = Math.abs(matchTouch.clientY - touchStartY);
-            if (dx < 25 && dy < 25) {
-              if (e.cancelable) e.preventDefault();
-              e.stopPropagation();
-              trigger(e, true);
-            }
-          } else {
-            if (e.cancelable) e.preventDefault();
-            e.stopPropagation();
-            trigger(e, true);
-          }
-        }, { passive: false });
-
-        if (!supportsPointerEvents) el.addEventListener('touchcancel', () => {
-          isPointerActive = false;
-          touchIdentifier = null;
         }, { passive: true });
 
-        // Desktop mouse click & programmatic .click()
+        el.addEventListener('touchend', (e) => {
+          if (!isTouchMoved) {
+            execute(e);
+          }
+        }, { passive: true });
+
+        // Native click (fires on Android, iOS, Desktop mouse, assistive tech)
         el.addEventListener('click', (e) => {
-          trigger(e, false);
+          execute(e);
         });
 
         // Keyboard accessibility
         el.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             if (e.cancelable) e.preventDefault();
-            trigger(e, false);
+            execute(e);
           }
         });
       }
